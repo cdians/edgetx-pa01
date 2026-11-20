@@ -8,7 +8,11 @@
 
 ## 界面预览
 
-| 场景列表 | 场景编辑 | 颜色设置 |
+| 主界面 | 主菜单 | 系统设置 |
+| --- | --- | --- |
+| ![主界面](design/ui_main.png) | ![主菜单](design/ui_menu.png) | ![系统设置](design/ui_settings.png) |
+
+| LED 场景列表 | 场景编辑 | 颜色设置 |
 | --- | --- | --- |
 | ![场景列表](design/ledfx_scenes.png) | ![场景编辑](design/ledfx_edit.png) | ![颜色设置](design/ledfx_ui.png) |
 
