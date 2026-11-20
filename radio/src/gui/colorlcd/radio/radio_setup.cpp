@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (C) EdgeTX
  *
  * Based on code named
@@ -699,7 +699,7 @@ static void viewOption(Window* parent, coord_t x, coord_t y,
     std::string s(STR_MODEL);
     s += " - ";
     s += STR_ADCFILTERVALUES[modelOption];
-    new StaticText(parent, {x + ToggleSwitch::TOGGLE_W + PAD_MEDIUM, y + PAD_SMALL + 1, 0, 0}, s.c_str(), COLOR_THEME_SECONDARY1_INDEX);
+    new StaticText(parent, {x + ToggleSwitch::TOGGLE_W + PAD_MEDIUM, y + PAD_SMALL + 1, 0, 0}, s.c_str(), COLOR_THEME_SECONDARY_FG_INDEX);
   }
 }
 
@@ -1053,7 +1053,7 @@ const static SetupLineDef setupLines[] = {
         s += " - ";
         s += STR_MODEL_USBMODES[g_model.usbMode];
         new StaticText(parent, {x + RadioSetupPage::USB_MODE_W + PAD_MEDIUM, y + PAD_SMALL + 1, 0, 0},
-                       s.c_str(), COLOR_THEME_SECONDARY1_INDEX);
+                       s.c_str(), COLOR_THEME_SECONDARY_FG_INDEX);
       }
     }
   },
@@ -1153,24 +1153,24 @@ static bool hasShortcutKeys()
 
 const static PageButtonDef radioSetupButtons[] = {
 #if defined(AUDIO)
-  {STR_DEF(STR_SOUND_LABEL), []() { new SubPage(ICON_RADIO_SETUP, STR_MAIN_RADIO_SETTINGS, STR_SOUND_LABEL, soundPageSetupLines); }},
+  {STR_DEF(STR_SOUND_LABEL), []() { new SubPage(ICON_RADIO_SETUP, STR_MAIN_RADIO_SETTINGS, STR_SOUND_LABEL, soundPageSetupLines); }, nullptr, nullptr, ICON_TOPMENU_VOLUME_3},
 #endif
 #if defined(VARIO)
-  {STR_DEF(STR_VARIO), []() { new SubPage(ICON_RADIO_SETUP, STR_MAIN_RADIO_SETTINGS, STR_VARIO, varioPageSetupLines); }},
+  {STR_DEF(STR_VARIO), []() { new SubPage(ICON_RADIO_SETUP, STR_MAIN_RADIO_SETTINGS, STR_VARIO, varioPageSetupLines); }, nullptr, nullptr, ICON_STATS},
 #endif
 #if defined(HAPTIC)
-  {STR_DEF(STR_HAPTIC_LABEL), []() { new SubPage(ICON_RADIO_SETUP, STR_MAIN_RADIO_SETTINGS, STR_HAPTIC_LABEL, hapticPageSetupLines); }},
+  {STR_DEF(STR_HAPTIC_LABEL), []() { new SubPage(ICON_RADIO_SETUP, STR_MAIN_RADIO_SETTINGS, STR_HAPTIC_LABEL, hapticPageSetupLines); }, nullptr, nullptr, ICON_RADIO_SETUP},
 #endif
-  {STR_DEF(STR_ALARMS_LABEL), []() { new SubPage(ICON_RADIO_SETUP, STR_MAIN_RADIO_SETTINGS, STR_ALARMS_LABEL, alarmsPageSetupLines); }},
-  {STR_DEF(STR_BACKLIGHT_LABEL), []() { (new SubPage(ICON_RADIO_SETUP, STR_MAIN_RADIO_SETTINGS, STR_BACKLIGHT_LABEL, backlightSetupLines))->useFlexLayout(); }},
+  {STR_DEF(STR_ALARMS_LABEL), []() { new SubPage(ICON_RADIO_SETUP, STR_MAIN_RADIO_SETTINGS, STR_ALARMS_LABEL, alarmsPageSetupLines); }, nullptr, nullptr, ICON_ERROR},
+  {STR_DEF(STR_BACKLIGHT_LABEL), []() { (new SubPage(ICON_RADIO_SETUP, STR_MAIN_RADIO_SETTINGS, STR_BACKLIGHT_LABEL, backlightSetupLines))->useFlexLayout(); }, nullptr, nullptr, ICON_THEME_SETUP},
 #if defined(STATUS_LED_COLORS)
-  {STR_DEF(STR_STATUS_LED), []() { new SubPage(ICON_RADIO_SETUP, STR_MAIN_RADIO_SETTINGS, STR_STATUS_LED, statusLedSetupLines); }},
+  {STR_DEF(STR_STATUS_LED), []() { new SubPage(ICON_RADIO_SETUP, STR_MAIN_RADIO_SETTINGS, STR_STATUS_LED, statusLedSetupLines); }, nullptr, nullptr, ICON_RADIO_HARDWARE},
 #endif
-  {STR_DEF(STR_GPS), []() { new SubPage(ICON_RADIO_SETUP, STR_MAIN_RADIO_SETTINGS, STR_GPS, gpsPageSetupLines); }},
-  {STR_DEF(STR_ENABLED_FEATURES), []() { new SubPage(ICON_RADIO_SETUP, STR_MAIN_RADIO_SETTINGS, STR_ENABLED_FEATURES, viewOptionsPageSetupLines); }},
-  {STR_DEF(STR_MAIN_MENU_MANAGE_MODELS), []() { new SubPage(ICON_RADIO_SETUP, STR_MAIN_RADIO_SETTINGS, STR_MAIN_MENU_MANAGE_MODELS, manageModelsSetupLines); }},
-  {STR_DEF(STR_KEY_SHORTCUTS), []() { new QMKeyShortcutsPage(); }, nullptr, []() { return hasShortcutKeys(); }},
-  {STR_DEF(STR_QUICK_MENU_FAVORITES), []() { new QMFavoritesPage(); }, nullptr},
+  {STR_DEF(STR_GPS), []() { new SubPage(ICON_RADIO_SETUP, STR_MAIN_RADIO_SETTINGS, STR_GPS, gpsPageSetupLines); }, nullptr, nullptr, ICON_MODEL_TELEMETRY},
+  {STR_DEF(STR_ENABLED_FEATURES), []() { new SubPage(ICON_RADIO_SETUP, STR_MAIN_RADIO_SETTINGS, STR_ENABLED_FEATURES, viewOptionsPageSetupLines); }, nullptr, nullptr, ICON_STATS},
+  {STR_DEF(STR_MAIN_MENU_MANAGE_MODELS), []() { new SubPage(ICON_RADIO_SETUP, STR_MAIN_RADIO_SETTINGS, STR_MAIN_MENU_MANAGE_MODELS, manageModelsSetupLines); }, nullptr, nullptr, ICON_MODEL_SELECT},
+  {STR_DEF(STR_KEY_SHORTCUTS), []() { new QMKeyShortcutsPage(); }, nullptr, []() { return hasShortcutKeys(); }, ICON_RADIO_TOOLS},
+  {STR_DEF(STR_QUICK_MENU_FAVORITES), []() { new QMFavoritesPage(); }, nullptr, nullptr, ICON_QM_FAVORITES},
   {nullptr},
 };
 

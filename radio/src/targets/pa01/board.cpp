@@ -166,6 +166,11 @@ void boardInit()
   boardInitModulePorts();
 
   pwrInit();
+  // Latch the power rail right away. On a USB-only supply the rail is not
+  // driven by the power key, so anything that stalls between here and the
+  // original pwrOn() call (gimbal, USB, ADC probing) can drop the MCU back
+  // into reset before the charge screen has a chance to come up.
+  pwrOn();
   delaysInit();
   timersInit();
 
@@ -220,7 +225,10 @@ void boardInit()
       }
       // Exit conditions: button pressed or charger disconnected
       if (!pwrPressedDebounced() && is_charging) {
+        // Same pairing as the live branch below: the strip keeps its breathing
+        // charge indication, the panel gets the gauge.
         updateBatteryState(RGB_STATE_CHARGE);
+        handle_battery_charge(0);
       } else {
         rgbLedClearAll();
         if (!is_charging) {
@@ -229,6 +237,7 @@ void boardInit()
         break;
       }
     }
+    battery_charge_end();
   }
 
   // First stage: Detect initial button press and handle press duration
@@ -347,6 +356,8 @@ void boardInit()
           case 0x01: led_start_time = now;
           case 0x03:
           {
+            // The RGB strip logic is left exactly as it was: breathe the charge
+            // colour for the first 6 s after the charger appears, then go quiet.
             if( (led_start_time && now-led_start_time<6000) || (!led_start_time && now-start_time<6000) )
             {
               updateBatteryState(RGB_STATE_CHARGE);
@@ -355,6 +366,10 @@ void boardInit()
             {
               rgbLedClearAll();
             }
+
+            // Panel gauge. The press timestamp lets a tap wake the screen after
+            // it has dimmed or gone dark.
+            handle_battery_charge(pwrPressed_start_time);
           }
           break;
           default: break;
@@ -370,6 +385,9 @@ void boardInit()
         }
         if(pwrPressed_start_time && now-pwrPressed_start_time>1500 )
         {
+          // Wipe the charge gauge before boot re-initialises the panel, so the
+          // first boot frame does not sit on top of the battery picture.
+          battery_charge_end();
           rgbLedClearAll();
           break;      //power on
         }

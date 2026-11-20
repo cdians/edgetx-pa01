@@ -128,6 +128,13 @@ NumberEdit::NumberEdit(Window* parent, const rect_t& rect, int vmin, int vmax,
 
   setTextFlag(textFlags);
 
+  // PA01: modern flat field surface (no-op on other targets).
+  // NumberEdit derives from TextButton, so it picks up etx_btn_style() from
+  // button_constructor() -- the outlined pill -- rather than the textarea
+  // style. This is the actual hook for all number fields in the UI.
+  // Placed before the local paddings so the edit's own spacing still wins.
+  etx_field_style(lvobj);
+
   padLeft(PAD_MEDIUM);
   padRight(PAD_SMALL);
 

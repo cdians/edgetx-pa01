@@ -113,7 +113,26 @@ TopBar::TopBar(Window * parent) :
   WidgetsContainer(parent, {0, 0, LCD_W, EdgeTxStyles::MENU_HEADER_HEIGHT}, MAX_TOPBAR_ZONES)
 {
   setWindowFlag(NO_FOCUS | IS_TOP_BAR);
+#if defined(PCBPA01)
+  // Recede the status bar: SECONDARY1 is a mid slate on the PA01 palette and it
+  // used to read as a separate grey band. A near-black bar with one hairline
+  // lets the cards below own the contrast.
+  etx_solid_bg(lvobj, COLOR_THEME_PRIMARY2_INDEX);
+#else
   etx_solid_bg(lvobj, COLOR_THEME_SECONDARY1_INDEX);
+#endif
+
+#if defined(PCBPA01)
+  // Hairline under the status bar. The bar used to end with a hard colour step
+  // against the background image; a 1px line reads as a deliberate edge.
+  auto divider = lv_obj_create(lvobj);
+  lv_obj_remove_style_all(divider);
+  lv_obj_set_size(divider, LV_PCT(100), 1);
+  lv_obj_align(divider, LV_ALIGN_BOTTOM_MID, 0, 0);
+  etx_solid_bg(divider, COLOR_THEME_SECONDARY2_INDEX);
+  lv_obj_set_style_bg_opa(divider, LV_OPA_30, LV_PART_MAIN);
+  lv_obj_clear_flag(divider, LV_OBJ_FLAG_CLICKABLE);
+#endif
 }
 
 unsigned int TopBar::getZonesCount() const

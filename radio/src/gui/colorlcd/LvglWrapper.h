@@ -38,6 +38,19 @@ class LvglWrapper
   ~LvglWrapper() {}
 };
 
+// Bring up the display + input drivers only, without building the main UI.
+//
+// The charging screen runs while the radio is still "off": the EEPROM has not
+// been read yet, so g_eeGeneral / g_model are all zeroes. Creating MainWindow
+// and ViewMain at that point would build the whole model view from empty data,
+// which is both pointless (the charging screen covers it) and risky. This entry
+// point stops right after the drivers, leaving the default screen free for the
+// caller to draw on.
+//
+// Calling LvglWrapper::instance() afterwards is still correct: the driver setup
+// is guarded, so only MainWindow / ViewMain get created then.
+void lvglInitDisplayOnly();
+
 #if defined(VOICE_CONTROL_SENSOR)
 void lvglRequestKeyboardEnter();
 #endif

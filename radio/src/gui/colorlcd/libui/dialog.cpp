@@ -54,7 +54,7 @@ BaseDialog::BaseDialog(const char* title,
   etx_solid_bg(content->getLvObj());
   lv_obj_center(content->getLvObj());
 
-  header = new StaticText(content, {0, 0, LV_PCT(100), 0}, title ? title : "", COLOR_THEME_PRIMARY2_INDEX);
+  header = new StaticText(content, {0, 0, LV_PCT(100), 0}, title ? title : "", COLOR_THEME_ON_DARK_INDEX);
   etx_solid_bg(header->getLvObj(), COLOR_THEME_SECONDARY1_INDEX);
   header->padAll(PAD_SMALL);
   header->show(title != nullptr);
@@ -187,7 +187,7 @@ LabelDialog::LabelDialog(const char *label, int length, const char* title,
   lv_obj_center(form->getLvObj());
 
   auto hdr = new StaticText(form, {0, 0, LV_PCT(100), 0}, title,
-                            COLOR_THEME_PRIMARY2_INDEX);
+                            COLOR_THEME_ON_DARK_INDEX);
   etx_solid_bg(hdr->getLvObj(), COLOR_THEME_SECONDARY1_INDEX);
   hdr->padAll(PAD_MEDIUM);
 

@@ -32,6 +32,73 @@
 #include "view_channels.h"
 #include "widget.h"
 
+#if defined(PCBPA01)
+// PA01: the framed EdgeTX tile in the top-left corner is replaced by a brand
+// line - an accent dot and the model name. The strip keeps the same touch area
+// so tapping it still opens the Quick Menu.
+static lv_obj_t* brandNameLabel = nullptr;
+static char brandNameText[LEN_MODEL_NAME + 1] = "";
+
+// ViewMain survives a model switch (only the custom screens are reloaded), so
+// the brand line has to follow g_model instead of being set once at build time.
+static void updateBrandName()
+{
+  if (!brandNameLabel) return;
+  const char* name = g_model.header.name[0] ? g_model.header.name : "MODEL";
+  if (strcmp(name, brandNameText) == 0) return;
+  strAppend(brandNameText, name, LEN_MODEL_NAME + 1);
+  lv_label_set_text(brandNameLabel, brandNameText);
+}
+
+class MainViewBrand : public Window
+{
+ public:
+  MainViewBrand(Window* parent, std::function<void()> action) :
+      Window(parent, {0, 0, LCD_W, EdgeTxStyles::MENU_HEADER_HEIGHT}),
+      action(std::move(action))
+  {
+    setWindowFlag(NO_FOCUS | NO_CLICK);
+
+    auto dot = lv_obj_create(lvobj);
+    lv_obj_remove_style_all(dot);
+    lv_obj_set_style_radius(dot, LV_RADIUS_CIRCLE, LV_PART_MAIN);
+    etx_solid_bg(dot, COLOR_THEME_FOCUS_INDEX);
+    lv_obj_clear_flag(dot, LV_OBJ_FLAG_CLICKABLE);
+    // 5px, per the design. At 8px it competed with the model name instead of
+    // sitting quietly in front of it.
+    lv_obj_set_size(dot, 5, 5);
+    lv_obj_set_pos(dot, PAD_MEDIUM, (EdgeTxStyles::MENU_HEADER_HEIGHT - 5) / 2);
+
+    // 14px: the model name is the one piece of identity in the bar, so it gets a
+    // step above the 10px status text instead of matching it.
+    nameLabel = etx_label_create(lvobj, FONT_XS_INDEX);
+    lv_obj_set_width(nameLabel, LCD_W - 60);
+    lv_label_set_long_mode(nameLabel, LV_LABEL_LONG_DOT);
+    etx_txt_color(nameLabel, COLOR_THEME_PRIMARY1_INDEX);
+    lv_obj_clear_flag(nameLabel, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_align(nameLabel, LV_ALIGN_LEFT_MID, PAD_MEDIUM + 5 + PAD_SMALL, 0);
+    brandNameLabel = nameLabel;
+    updateBrandName();
+
+#if defined(HARDWARE_TOUCH)
+    if (this->action) addCustomButton(0, 0, [=]() { this->action(); });
+#endif
+  }
+
+  ~MainViewBrand() override
+  {
+    if (brandNameLabel == nameLabel) {
+      brandNameLabel = nullptr;
+      brandNameText[0] = '\0';
+    }
+  }
+
+ protected:
+  std::function<void()> action;
+  lv_obj_t* nameLabel = nullptr;
+};
+#endif
+
 static void saveViewId(unsigned view)
 {
   if (view != g_model.view) {
@@ -105,7 +172,11 @@ ViewMain::ViewMain() :
 
   // create last to be on top
   topbar = new TopBar(this);
+#if defined(PCBPA01)
+  headerIcon = new MainViewBrand(this, [=]() { QuickMenu::openQuickMenu(); });
+#else
   headerIcon = new HeaderIcon(this, ICON_EDGETX, [=]() { QuickMenu::openQuickMenu(); });
+#endif
 
   onClosing([=]() {
     _instance = nullptr;
@@ -392,6 +463,9 @@ void ViewMain::hideTopBarEdgeTxButton()
 
 void ViewMain::_refreshWidgets()
 {
+#if defined(PCBPA01)
+  updateBrandName();
+#endif
   if (!deleted()) {
     topbar->refreshWidgets(isVisible && hasTopbar());
     for (int i = 0; i < MAX_CUSTOM_SCREENS; i += 1) {

@@ -333,3 +333,20 @@ extern "C" void lcdInit()
 
   lcdSetFlushCb(startLcdRefresh);
 }
+
+// Push a complete RGB565 frame straight over SPI.
+//
+// Used by the charge screen, which runs before LVGL exists: there is no
+// disp_drv to report to, so this must not touch lv_disp_flush_ready().
+extern "C" void lcdPushFullFrame(const uint16_t* fb)
+{
+  // FMARK is the panel's tearing-effect output. Wait for it so the write lands
+  // inside a blanking window, but give up after a bounded spin: if the panel
+  // is not scanning yet, blocking here would hang the whole charge loop.
+  uint32_t guard = 2000000;
+  while (!gpio_read(LCD_FMARK) && --guard) {}
+
+  set_column_addr(0, LCD_W - 1);
+  set_row_addr(0, LCD_H - 1);
+  memory_write(fb, LCD_W * LCD_H);
+}

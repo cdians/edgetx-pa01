@@ -38,6 +38,13 @@ ChannelBar::ChannelBar(Window* parent, const rect_t& rect, uint8_t channel,
 {
   setWindowFlag(NO_CLICK);
 
+#if defined(PCBPA01)
+  // Every bar is painted with PRIMARY2, which is the dark surface colour in
+  // the PA01 palette, so the stock secondary text colour is illegible here.
+  if (txtColorIndex == COLOR_THEME_SECONDARY1_INDEX)
+    txtColorIndex = COLOR_THEME_PRIMARY1_INDEX;
+#endif
+
   etx_solid_bg(lvobj, COLOR_THEME_PRIMARY2_INDEX);
 
   bar = lv_obj_create(lvobj);
@@ -211,7 +218,13 @@ ComboChannelBar::ComboChannelBar(Window* parent, const rect_t& rect,
                                  uint8_t _channel, bool isInHeader) :
     Window(parent, rect), channel(_channel)
 {
+#if defined(PCBPA01)
+  // The bar is painted with PRIMARY2, which is the dark surface colour in the
+  // PA01 palette, so both label variants need the light foreground.
+  LcdColorIndex txtColIdx = COLOR_THEME_PRIMARY1_INDEX;
+#else
   LcdColorIndex txtColIdx = isInHeader ? COLOR_THEME_PRIMARY2_INDEX : COLOR_THEME_SECONDARY1_INDEX;
+#endif
 
   auto invMask = getBuiltinIcon(ICON_CHAN_MONITOR_INVERTED);
 

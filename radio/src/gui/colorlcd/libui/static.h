@@ -125,6 +125,10 @@ class StaticIcon : public Window
              LcdColorIndex color);
   StaticIcon(Window *parent, coord_t x, coord_t y, const char* filename,
              LcdColorIndex color);
+  // Draw an already-resolved 8-bit alpha mask (e.g. a resampled builtin icon).
+  // The mask is not owned: the caller keeps the buffer alive.
+  StaticIcon(Window *parent, coord_t x, coord_t y, const MaskBitmap* bitmap,
+             LcdColorIndex color);
 
 #if defined(DEBUG_WINDOWS)
   std::string getName() const override { return "StaticIcon"; }

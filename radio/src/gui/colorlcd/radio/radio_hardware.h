@@ -38,6 +38,12 @@ class RadioHardwarePage : public PageGroupItem
   static LAYOUT_SIZE(BTN_COLS, 4, 3)
 #endif
   static LAYOUT_SIZE(FS_BTN_COLS, 2, 2)
+  // PA01: same icon-over-caption card as the other setup grids.
+#if defined(PCBPA01)
+  static LAYOUT_VAL_SCALED(BTN_H, 105)
+#else
+  static constexpr coord_t BTN_H = EdgeTxStyles::UI_ELEMENT_HEIGHT;
+#endif
 
  protected:
   void cleanup() override;

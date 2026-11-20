@@ -3140,6 +3140,10 @@ static int luaSetCFSLedColor(lua_State * L)
 #endif
 
 #if (BLING_LED_STRIP_LENGTH > 0) || (CFS_LED_STRIP_LENGTH > 0)
+#if defined(PCBPA01)
+void ledSceneOnLuaApply();
+#endif
+
 /*luadoc
 @function applyRGBLedColors()
 
@@ -3150,6 +3154,9 @@ static int luaSetCFSLedColor(lua_State * L)
 
 static int luaApplyRGBLedColors(lua_State * L)
 {
+#if defined(PCBPA01)
+  ledSceneOnLuaApply();
+#endif
   rgbLedColorApply();
   return 1;
 }

@@ -24,6 +24,14 @@
 #include "edgetx.h"
 #include "static.h"
 
+#if defined(PCBPA01)
+// PRIMARY2 is the dark surface colour on the PA01 palette, so the gauge text
+// must use the light foreground instead.
+constexpr LcdColorIndex GAUGE_TEXT_COLOR = COLOR_THEME_PRIMARY1_INDEX;
+#else
+constexpr LcdColorIndex GAUGE_TEXT_COLOR = COLOR_THEME_PRIMARY2_INDEX;
+#endif
+
 class GaugeWidget : public Widget
 {
  public:
@@ -38,11 +46,11 @@ class GaugeWidget : public Widget
   {
     // Gauge label
     sourceText = new StaticText(this, {0, 0, LV_SIZE_CONTENT, 16}, "",
-                                COLOR_THEME_PRIMARY2_INDEX, FONT(XS));
+                                GAUGE_TEXT_COLOR, FONT(XS));
 
     valueText = new DynamicNumber<int16_t>(
         this, {0, 0, lv_pct(100), GUAGE_H}, [=]() { return getGuageValue(); },
-        COLOR_THEME_PRIMARY2_INDEX, FONT(XS) | CENTERED, "", "%");
+        GAUGE_TEXT_COLOR, FONT(XS) | CENTERED, "", "%");
     etx_obj_add_style(valueText->getLvObj(), styles->text_align_right,
                       LV_STATE_USER_1);
 
@@ -50,7 +58,11 @@ class GaugeWidget : public Widget
     lv_obj_set_pos(box, 0, GUAGE_H);
     lv_obj_set_size(box, lv_pct(100), GUAGE_H);
     lv_obj_clear_flag(box, LV_OBJ_FLAG_CLICKABLE);
+#if defined(PCBPA01)
+    etx_solid_bg(box, COLOR_THEME_SECONDARY3_INDEX);
+#else
     etx_solid_bg(box, COLOR_THEME_PRIMARY2_INDEX);
+#endif
 
     bar = lv_obj_create(box);
     lv_obj_set_pos(bar, 0, 0);

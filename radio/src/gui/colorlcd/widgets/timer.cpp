@@ -56,6 +56,11 @@ class TimerWidget : public Widget
     etx_obj_add_style(nameLabel, styles->text_align_right,
                       LV_PART_MAIN | EXT_NAME_ALIGN_RIGHT);
     etx_txt_color(nameLabel, COLOR_THEME_SECONDARY1_INDEX);
+#if defined(PCBPA01)
+    // SECONDARY1 is a surface colour in the PA01 palette, so the timer name
+    // needs the light text colour to stay readable on the dark background.
+    etx_txt_color(nameLabel, COLOR_THEME_PRIMARY1_INDEX);
+#endif
     etx_txt_color(nameLabel, COLOR_THEME_SECONDARY2_INDEX,
                   LV_PART_MAIN | ETX_STATE_WARNING);
     etx_txt_color(nameLabel, COLOR_THEME_PRIMARY2_INDEX,
@@ -86,6 +91,16 @@ class TimerWidget : public Widget
         val = (int)lastStartValue - lastValue;
 
       if (isLarge) {
+#if defined(PCBPA01)
+        updateCard(val, timerData.showElapsed);
+        if (digits0) {
+          lv_obj_add_flag(digits0, LV_OBJ_FLAG_HIDDEN);
+          lv_obj_add_flag(digits1, LV_OBJ_FLAG_HIDDEN);
+          lv_obj_add_flag(unit0, LV_OBJ_FLAG_HIDDEN);
+          lv_obj_add_flag(unit1, LV_OBJ_FLAG_HIDDEN);
+          lv_obj_add_flag(minusLabel, LV_OBJ_FLAG_HIDDEN);
+        }
+#else
         splitTimer(abs(val));
 
         lv_label_set_text(digits0, sDigit0);
@@ -111,6 +126,7 @@ class TimerWidget : public Widget
           lv_obj_add_flag(timerArc, LV_OBJ_FLAG_HIDDEN);
           timerIcon->show();
         }
+#endif
       } else {
         char str[LEN_TIMER_STRING];
 
@@ -133,29 +149,49 @@ class TimerWidget : public Widget
       if (warning) {
         if (isLarge) {
           lv_obj_add_state(nameLabel, ETX_STATE_WARNING);
+#if defined(PCBPA01)
+          if (cardVal)
+            lv_obj_add_state(cardVal, ETX_STATE_WARNING);
+          if (cardFill)
+            lv_obj_add_state(cardFill, ETX_STATE_WARNING);
+#else
           lv_obj_add_state(digits0, ETX_STATE_WARNING);
           lv_obj_add_state(digits1, ETX_STATE_WARNING);
           lv_obj_add_state(unit0, ETX_STATE_WARNING);
           lv_obj_add_state(unit1, ETX_STATE_WARNING);
           lv_obj_add_state(minusLabel, ETX_STATE_WARNING);
+#endif
           lv_obj_clear_state(lvobj, ETX_STATE_WARNING);
           if (timerBg)
             lv_obj_add_state(timerBg, ETX_STATE_WARNING);
-          timerIcon->setColor(COLOR_THEME_SECONDARY2_INDEX);
+          if (timerIcon)
+            timerIcon->setColor(COLOR_THEME_SECONDARY2_INDEX);
         } else {
           lv_obj_add_state(lvobj, ETX_STATE_WARNING);
         }
       } else {
         if (isLarge) {
           lv_obj_clear_state(nameLabel, ETX_STATE_WARNING);
+#if defined(PCBPA01)
+          if (cardVal)
+            lv_obj_clear_state(cardVal, ETX_STATE_WARNING);
+          if (cardFill)
+            lv_obj_clear_state(cardFill, ETX_STATE_WARNING);
+#else
           lv_obj_clear_state(digits0, ETX_STATE_WARNING);
           lv_obj_clear_state(digits1, ETX_STATE_WARNING);
           lv_obj_clear_state(unit0, ETX_STATE_WARNING);
           lv_obj_clear_state(unit1, ETX_STATE_WARNING);
           lv_obj_clear_state(minusLabel, ETX_STATE_WARNING);
+#endif
           if (timerBg)
             lv_obj_clear_state(timerBg, ETX_STATE_WARNING);
-          timerIcon->setColor(COLOR_THEME_SECONDARY1_INDEX);
+          if (timerIcon)
+            timerIcon->setColor(COLOR_THEME_SECONDARY1_INDEX);
+#if defined(PCBPA01)
+          if (timerIcon)
+            timerIcon->setColor(COLOR_THEME_PRIMARY1_INDEX);
+#endif
         }
         lv_obj_clear_state(lvobj, ETX_STATE_WARNING);
       }
@@ -198,6 +234,18 @@ class TimerWidget : public Widget
   lv_obj_t* minusLabel = nullptr;
   lv_obj_t* timerArc = nullptr;
   lv_obj_t* timerBg = nullptr;
+#if defined(PCBPA01)
+  // Card UI: one plate, a "T1" pill, a single big value label and a progress
+  // groove along the bottom edge.
+  lv_obj_t* cardPlate = nullptr;
+  lv_obj_t* cardPill = nullptr;
+  lv_obj_t* cardVal = nullptr;
+  lv_obj_t* cardGroove = nullptr;
+  lv_obj_t* cardFill = nullptr;
+  bool cardUI = false;
+  static constexpr coord_t CARD_PAD = PAD_MEDIUM;
+  static constexpr coord_t CARD_BAR_H = 4;
+#endif
   static uint8_t timerBgBuffer[TMR_LRG_W * TMR_LRG_H];
   static bool timerBgDrawn;
   StaticIcon* timerIcon = nullptr;
@@ -230,7 +278,11 @@ class TimerWidget : public Widget
 
     if (width() >= TMR_LRG_W && height() >= TMR_LRG_H) {
       isLarge = true;
+#if defined(PCBPA01)
+      showCardUI();
+#else
       showLargeUI();
+#endif
     } else {
       isLarge = false;
       showSmallUI();
@@ -247,6 +299,9 @@ class TimerWidget : public Widget
     auto lbl = etx_label_create(lvobj);
     lv_label_set_text(lbl, "");
     etx_txt_color(lbl, COLOR_THEME_SECONDARY1_INDEX);
+#if defined(PCBPA01)
+    etx_txt_color(lbl, COLOR_THEME_PRIMARY1_INDEX);
+#endif
     etx_txt_color(lbl, COLOR_THEME_SECONDARY2_INDEX,
                   LV_PART_MAIN | ETX_STATE_WARNING);
 
@@ -297,6 +352,9 @@ class TimerWidget : public Widget
       lv_obj_add_flag(timerArc, LV_OBJ_FLAG_HIDDEN);
     if (timerIcon)
       timerIcon->hide();
+#if defined(PCBPA01)
+    hideCardUI();
+#endif
   }
 
   void createLargeUI()
@@ -325,8 +383,13 @@ class TimerWidget : public Widget
       }
     }
 
+#if defined(PCBPA01)
+    constexpr LcdColorIndex iconColor = COLOR_THEME_PRIMARY1_INDEX;
+#else
+    constexpr LcdColorIndex iconColor = COLOR_THEME_SECONDARY1_INDEX;
+#endif
     if (!timerIcon)
-      timerIcon = new StaticIcon(this, PAD_SMALL, PAD_SMALL, ICON_TIMER, COLOR_THEME_SECONDARY1_INDEX);
+      timerIcon = new StaticIcon(this, PAD_SMALL, PAD_SMALL, ICON_TIMER, iconColor);
 
     if (!unit0) {
       // Timer value - on large widgets
@@ -358,10 +421,178 @@ class TimerWidget : public Widget
       lv_obj_set_style_arc_width(timerArc, TMR_ARC_W, LV_PART_MAIN);
       lv_obj_set_style_arc_opa(timerArc, LV_OPA_COVER, LV_PART_INDICATOR);
       lv_obj_set_style_arc_width(timerArc, TMR_ARC_W, LV_PART_INDICATOR);
+#if defined(PCBPA01)
+      // Pink progress ring: the only strong accent on the main view.
+      etx_arc_color(timerArc, COLOR_THEME_FOCUS_INDEX, LV_PART_INDICATOR);
+#else
       etx_arc_color(timerArc, COLOR_THEME_SECONDARY1_INDEX, LV_PART_INDICATOR);
+#endif
       lv_obj_add_flag(timerArc, LV_OBJ_FLAG_HIDDEN);
     }
   }
+
+#if defined(PCBPA01)
+  // PA01 card UI -----------------------------------------------------------
+  // The legacy large UI splits the value into four labels positioned by fixed
+  // offsets and hangs an arc off the left edge. On the new dark palette that
+  // reads as loose fragments, so the card keeps a single value label and puts
+  // the progress into a groove along the bottom of the plate.
+  void createCardUI()
+  {
+    if (cardUI) return;
+    cardUI = true;
+
+    cardPlate = lv_obj_create(lvobj);
+    lv_obj_remove_style_all(cardPlate);
+    lv_obj_set_size(cardPlate, LV_PCT(100), LV_PCT(100));
+    lv_obj_set_style_radius(cardPlate, 6, LV_PART_MAIN);
+    // SECONDARY3 rather than PRIMARY2 or PRIMARY3: PRIMARY2 falls inside the
+    // wallpaper's own range so the card vanished, and PRIMARY3 (28,40,51) reads
+    // distinctly teal next to the pink glow. SECONDARY3 (28,33,43) is the one
+    // neutral step that matches the design's #161C27.
+    etx_solid_bg(cardPlate, COLOR_THEME_SECONDARY3_INDEX);
+    lv_obj_set_style_bg_opa(cardPlate, LV_OPA_COVER, LV_PART_MAIN);
+    etx_obj_add_style(cardPlate, styles->border_thin, LV_PART_MAIN);
+    etx_obj_add_style(cardPlate, styles->border_color[COLOR_THEME_SECONDARY2_INDEX],
+                      LV_PART_MAIN);
+    lv_obj_set_style_border_opa(cardPlate, LV_OPA_30, LV_PART_MAIN);
+    lv_obj_clear_flag(cardPlate, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_move_background(cardPlate);
+
+    cardPill = lv_obj_create(lvobj);
+    lv_obj_remove_style_all(cardPill);
+    lv_obj_set_style_radius(cardPill, LV_RADIUS_CIRCLE, LV_PART_MAIN);
+    etx_solid_bg(cardPill, COLOR_THEME_FOCUS_INDEX);
+    lv_obj_set_style_bg_opa(cardPill, LV_OPA_20, LV_PART_MAIN);
+    lv_obj_clear_flag(cardPill, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_set_size(cardPill, 24, 15);
+    lv_obj_set_pos(cardPill, CARD_PAD, CARD_PAD);
+    // The name label is created before the pill, so push the pill behind it.
+    lv_obj_move_to_index(cardPill, 1);
+
+    cardVal = etx_label_create(lvobj, FONT_XL_INDEX);
+    etx_txt_color(cardVal, COLOR_THEME_PRIMARY1_INDEX);
+    etx_txt_color(cardVal, COLOR_THEME_WARNING_INDEX,
+                  LV_PART_MAIN | ETX_STATE_WARNING);
+    etx_obj_add_style(cardVal, styles->text_align_center, LV_PART_MAIN);
+    lv_label_set_text(cardVal, "00:00");
+    // Full-width label with centred text: the value re-centres itself when the
+    // string changes length, which a content-sized label does not do.
+    lv_obj_set_width(cardVal, LV_PCT(100));
+    lv_obj_align(cardVal, LV_ALIGN_CENTER, 0, PAD_TINY);
+
+    cardGroove = lv_obj_create(lvobj);
+    lv_obj_remove_style_all(cardGroove);
+    lv_obj_set_style_radius(cardGroove, LV_RADIUS_CIRCLE, LV_PART_MAIN);
+    etx_solid_bg(cardGroove, COLOR_THEME_PRIMARY1_INDEX);
+    lv_obj_set_style_bg_opa(cardGroove, LV_OPA_10, LV_PART_MAIN);
+    lv_obj_clear_flag(cardGroove, LV_OBJ_FLAG_CLICKABLE);
+
+    cardFill = lv_obj_create(lvobj);
+    lv_obj_remove_style_all(cardFill);
+    lv_obj_set_style_radius(cardFill, LV_RADIUS_CIRCLE, LV_PART_MAIN);
+    etx_solid_bg(cardFill, COLOR_THEME_FOCUS_INDEX);
+    etx_solid_bg(cardFill, COLOR_THEME_WARNING_INDEX,
+                 LV_PART_MAIN | ETX_STATE_WARNING);
+    lv_obj_set_style_bg_opa(cardFill, LV_OPA_80, LV_PART_MAIN);
+    lv_obj_clear_flag(cardFill, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_add_flag(cardFill, LV_OBJ_FLAG_HIDDEN);
+  }
+
+  void showCardUI()
+  {
+    hideSmallUI();
+    createCardUI();
+
+    // Name becomes the caption inside the pill.
+    lv_obj_clear_state(nameLabel, EXT_NAME_ALIGN_RIGHT);
+    lv_obj_clear_state(nameLabel, ETX_NAME_COLOR_WHITE);
+    etx_txt_color(nameLabel, COLOR_THEME_FOCUS_INDEX);
+    lv_obj_set_width(nameLabel, LV_SIZE_CONTENT);
+    lv_label_set_long_mode(nameLabel, LV_LABEL_LONG_CLIP);
+    lv_obj_align(nameLabel, LV_ALIGN_TOP_LEFT, CARD_PAD + 6, CARD_PAD + 3);
+
+    lv_obj_clear_flag(cardPlate, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_clear_flag(cardVal, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_clear_flag(cardGroove, LV_OBJ_FLAG_HIDDEN);
+    if (timerIcon) timerIcon->hide();
+    if (timerArc) lv_obj_add_flag(timerArc, LV_OBJ_FLAG_HIDDEN);
+    if (digits0) lv_obj_add_flag(digits0, LV_OBJ_FLAG_HIDDEN);
+    if (digits1) lv_obj_add_flag(digits1, LV_OBJ_FLAG_HIDDEN);
+    if (unit0) lv_obj_add_flag(unit0, LV_OBJ_FLAG_HIDDEN);
+    if (unit1) lv_obj_add_flag(unit1, LV_OBJ_FLAG_HIDDEN);
+    if (minusLabel) lv_obj_add_flag(minusLabel, LV_OBJ_FLAG_HIDDEN);
+
+    layoutCard();
+  }
+
+  void hideCardUI()
+  {
+    if (cardPlate) lv_obj_add_flag(cardPlate, LV_OBJ_FLAG_HIDDEN);
+    if (cardPill) lv_obj_add_flag(cardPill, LV_OBJ_FLAG_HIDDEN);
+    if (cardVal) lv_obj_add_flag(cardVal, LV_OBJ_FLAG_HIDDEN);
+    if (cardGroove) lv_obj_add_flag(cardGroove, LV_OBJ_FLAG_HIDDEN);
+    if (cardFill) lv_obj_add_flag(cardFill, LV_OBJ_FLAG_HIDDEN);
+  }
+
+  void layoutCard()
+  {
+    if (!cardGroove) return;
+
+    // Leave a hair of space under the plate so the timer card and the widget
+    // stacked below it do not fuse into one tall panel.
+    coord_t ch = height() - PAD_SMALL;
+    if (cardPlate) lv_obj_set_size(cardPlate, width(), ch);
+
+    coord_t gw = width() - 2 * CARD_PAD;
+    if (gw < 8) gw = 8;
+
+    lv_obj_set_size(cardGroove, gw, CARD_BAR_H);
+    lv_obj_set_pos(cardGroove, CARD_PAD, ch - CARD_PAD - CARD_BAR_H);
+
+    if (cardFill) {
+      lv_obj_set_height(cardFill, CARD_BAR_H);
+      lv_obj_set_pos(cardFill, CARD_PAD, ch - CARD_PAD - CARD_BAR_H);
+    }
+  }
+
+  void updateCard(tmrval_t val, bool showElapsed)
+  {
+    if (!cardVal) return;
+
+    char str[LEN_TIMER_STRING];
+    TimerOptions timerOptions;
+    timerOptions.options = (abs(val) >= 3600) ? SHOW_TIME : SHOW_TIMER;
+    getTimerString(str, val, timerOptions);
+    lv_label_set_text(cardVal, str);
+
+    // Pill follows the label so "T1" and "TMR1" both look intentional.
+    if (cardPill && nameLabel) {
+      lv_obj_set_width(cardPill, lv_obj_get_self_width(nameLabel) + 12);
+      lv_obj_set_height(cardPill, 15);
+    }
+
+    if (cardFill && cardGroove) {
+      int pct = 0;
+      if (lastStartValue > 0) {
+        int done = showElapsed ? (int)lastValue
+                               : (int)(lastStartValue - lastValue);
+        if (done < 0) done = 0;
+        if (done > (int)lastStartValue) done = (int)lastStartValue;
+        pct = done * 100 / (int)lastStartValue;
+      }
+
+      coord_t gw = width() - 2 * CARD_PAD;
+      if (gw < 8) gw = 8;
+      if (pct <= 0) {
+        lv_obj_add_flag(cardFill, LV_OBJ_FLAG_HIDDEN);
+      } else {
+        lv_obj_clear_flag(cardFill, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_set_width(cardFill, gw * pct / 100);
+      }
+    }
+  }
+#endif
 
   void showSmallUI()
   {
@@ -389,6 +620,9 @@ class TimerWidget : public Widget
       valLabel = etx_label_create(lvobj);
       lv_label_set_text(valLabel, "");
       etx_txt_color(valLabel, COLOR_THEME_PRIMARY2_INDEX);
+#if defined(PCBPA01)
+      etx_txt_color(valLabel, COLOR_THEME_PRIMARY1_INDEX);
+#endif
       etx_font(valLabel, FONT_XS_INDEX, LV_PART_MAIN | ETX_SMALL_FONT);
       lv_obj_set_pos(valLabel, PAD_THREE, VAL_LBL_Y);
     }

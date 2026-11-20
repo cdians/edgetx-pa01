@@ -387,14 +387,22 @@ void checkBattery()
   static uint8_t sampleCount;
   // filter battery voltage by averaging it
   if (g_vbat100mV == 0) {
-    g_vbat100mV = (getBatteryVoltage() + 5) / 10;
+    uint16_t vbat = getBatteryVoltage();
+#if defined(PCBPA01)
+    vbat = (uint16_t)(vbat * BAT_VOL_FACTOR + 0.5f);
+#endif
+    g_vbat100mV = (vbat + 5) / 10;
     batSum = 0;
     sampleCount = 0;
   } else {
     batSum += getBatteryVoltage();
     // TRACE("checkBattery(): sampled = %d", getBatteryVoltage());
     if (++sampleCount >= BAT_AVG_SAMPLES) {
-      g_vbat100mV = (batSum + BAT_AVG_SAMPLES * 5) / (BAT_AVG_SAMPLES * 10);
+      uint32_t sum = batSum;
+#if defined(PCBPA01)
+      sum = (uint32_t)(sum * BAT_VOL_FACTOR + 0.5f);
+#endif
+      g_vbat100mV = (sum + BAT_AVG_SAMPLES * 5) / (BAT_AVG_SAMPLES * 10);
       batSum = 0;
       sampleCount = 0;
       // TRACE("checkBattery(): g_vbat100mV = %d", g_vbat100mV);

@@ -119,9 +119,13 @@ void EXTERNAL_MODULE_OFF();           /*gpio_clear(EXTMODULE_PWR_GPIO)*/
 #define DEFAULT_STICK_DEADZONE          2
 
 #define BATTERY_WARN                  74 // 7.4V
-#define BATTERY_MIN                   70 // 6.8V
-#define BATTERY_MAX                   86 // 8.6V
+#define BATTERY_MIN                   66 // 6.6V
+#define BATTERY_MAX                   84 // 8.4V
 #define BATTERY_DIVIDER               2323
+// Board-level ADC/divider correction. Applied once in checkBattery() so the
+// top bar percentage, the low-battery warning and the RGB LED thresholds all
+// work off the same voltage scale.
+#define BAT_VOL_FACTOR                (1.038)
 
 #if defined(__cplusplus) && !defined(SIMU)
 extern "C" {
@@ -265,6 +269,7 @@ enum rgb_color_e {
   RGB_COLOR_YELLOW = RGB_COLOR_RED | RGB_COLOR_GREEN,
   RGB_COLOR_PURPLE = RGB_COLOR_RED | RGB_COLOR_BLUE,
   RGB_COLOR_WHITE  = RGB_COLOR_RED | RGB_COLOR_GREEN | RGB_COLOR_BLUE,
+  RGB_COLOR_PINK   = 0x80,  // custom: fixed R:G:B ratio (20:6:13), not a bitmask
 };
 
 enum rgb_group_e {

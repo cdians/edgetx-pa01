@@ -1,4 +1,4 @@
-/*
+﻿/*
 * Copyright (C) EdgeTX
  *
  * Based on code named
@@ -437,7 +437,7 @@ void RadioMicRecorder::buildBody(Window* window)
   infoLabel = new StaticText(
       window,
       {0, infoY, w, infoH},
-      "", COLOR_THEME_SECONDARY1_INDEX, FONT(STD));
+      "", COLOR_THEME_SECONDARY_FG_INDEX, FONT(STD));
   lv_obj_set_style_text_align(infoLabel->getLvObj(), LV_TEXT_ALIGN_CENTER, 0);
 
   actionButton = new TextButton(

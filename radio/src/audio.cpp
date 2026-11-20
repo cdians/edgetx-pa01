@@ -932,10 +932,18 @@ void audioTimerCountdown(uint8_t timer, int value)
 #endif
 }
 
+#if defined(PCBPA01)
+void ledSceneEventAlarm();
+#endif
+
 void audioEvent(unsigned int index)
 {
   if (index == AU_NONE)
     return;
+
+#if defined(PCBPA01)
+  if (index == AU_WARNING1 || index == AU_WARNING2) ledSceneEventAlarm();
+#endif
 
 #if defined(HAPTIC)
   haptic.event(index); // do this before audio to help sync timings

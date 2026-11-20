@@ -80,10 +80,15 @@ class ModelBitmapWidget : public Widget
 
     // set font colour from options[0], if use theme color option off
     if (widgetData->options[4].value.boolValue) {
-      etx_txt_color(label->getLvObj(), COLOR_THEME_SECONDARY1_INDEX,
+      etx_txt_color(label->getLvObj(), COLOR_THEME_SECONDARY_FG_INDEX,
                     LV_PART_MAIN);
     } else {
-      etx_txt_color_from_flags(label->getLvObj(), widgetData->options[0].value.unsignedValue);
+      LcdFlags color = widgetData->options[0].value.unsignedValue;
+#if defined(PCBPA01)
+      // Models store colours picked for the stock light background.
+      color = pa01ReadableColor(color, COLOR_THEME_PRIMARY1_INDEX);
+#endif
+      etx_txt_color_from_flags(label->getLvObj(), color);
     }
 
     // Set label position
@@ -145,7 +150,8 @@ class ModelBitmapWidget : public Widget
 };
 
 const WidgetOption ModelBitmapWidget::options[] = {
-    {STR_COLOR, WidgetOption::Color, COLOR2FLAGS(COLOR_THEME_SECONDARY1_INDEX)},
+    {STR_COLOR, WidgetOption::Color,
+     COLOR2FLAGS(COLOR_THEME_SECONDARY_FG_INDEX)},
     {STR_SIZE, WidgetOption::TextSize, FONT_STD_INDEX},
     {STR_FILL_BACKGROUND, WidgetOption::Bool, false},
     {STR_BG_COLOR, WidgetOption::Color, COLOR2FLAGS(COLOR_THEME_SECONDARY3_INDEX)},

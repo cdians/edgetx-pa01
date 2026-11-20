@@ -260,10 +260,24 @@ QuickMenu::QuickMenu() :
 
   auto sep = lv_obj_create(lvobj);
   etx_solid_bg(sep, COLOR_THEME_QM_FG_INDEX);
+#if defined(PCBPA01)
+  // PA01: keep the rule on the header's bottom edge so the brand badge sits on
+  // it and the rule runs out to both screen edges like a drawer tab. A single
+  // pixel reads as a hairline under the badge at 320x240.
+  lv_obj_set_size(sep, QM_W, 1);
+  lv_obj_set_pos(sep, 0, EdgeTxStyles::UI_ELEMENT_HEIGHT - 1);
+#else
   lv_obj_set_size(sep, QM_W, PAD_THREE);
+#endif
 
   auto mask = getBuiltinIcon(ICON_TOP_LOGO);
+#if defined(PCBPA01)
+  new StaticIcon(this, (QM_W - mask->width) / 2,
+                 EdgeTxStyles::UI_ELEMENT_HEIGHT - 1 - mask->height,
+                 ICON_TOP_LOGO, COLOR_THEME_QM_FG_INDEX);
+#else
   new StaticIcon(this, (QM_W - mask->width) / 2, 0, ICON_TOP_LOGO, COLOR_THEME_QM_FG_INDEX);
+#endif
   mask = getBuiltinIcon(ICON_BTN_CLOSE);
   new StaticIcon(this, LCD_W - mask->width + 1, (EdgeTxStyles::UI_ELEMENT_HEIGHT - mask->height) / 2, ICON_BTN_CLOSE, COLOR_THEME_QM_FG_INDEX);
 

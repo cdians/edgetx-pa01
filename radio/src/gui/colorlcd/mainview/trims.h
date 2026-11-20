@@ -52,6 +52,10 @@ class MainViewTrim : public Window
   TrimIcon* trimIcon = nullptr;
   DynamicNumber<int16_t>* trimValue = nullptr;
   lv_obj_t* trimBar = nullptr;
+#if defined(PCBPA01)
+  // Shown only while the trim is home; the knob covers its middle.
+  lv_obj_t* centerMark = nullptr;
+#endif
 
   void setRange();
   void setPos();

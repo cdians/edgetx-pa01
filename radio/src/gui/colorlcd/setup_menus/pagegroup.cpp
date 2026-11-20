@@ -21,6 +21,8 @@
 
 #include "pagegroup.h"
 
+#include <cstring>
+
 #include "etx_lv_theme.h"
 #include "keyboard_base.h"
 #include "mainwindow.h"
@@ -64,13 +66,23 @@ PageGroupHeaderBase::PageGroupHeaderBase(Window* parent, coord_t height, EdgeTxI
   new HeaderBackIcon(this);
 
   parentLabel = etx_label_create(lvobj);
+#if defined(PCBPA01)
+  // PRIMARY2 is a dark surface colour in the PA01 palette; header text has to
+  // use the light foreground, otherwise the title is barely readable.
+  etx_txt_color(parentLabel, COLOR_THEME_PRIMARY1_INDEX);
+#else
   etx_txt_color(parentLabel, COLOR_THEME_PRIMARY2_INDEX);
+#endif
   lv_obj_set_pos(parentLabel, PageHeader::PAGE_TITLE_LEFT, PageHeader::PAGE_TITLE_TOP);
   lv_obj_set_size(parentLabel, LCD_W - PageHeader::PAGE_TITLE_LEFT - PageGroup::PAGE_GROUP_BACK_BTN_W * 2 - PAD_LARGE * 2, EdgeTxStyles::STD_FONT_HEIGHT);
   lv_label_set_text(parentLabel, parentTitle);
 
   titleLabel = etx_label_create(lvobj);
+#if defined(PCBPA01)
+  etx_txt_color(titleLabel, COLOR_THEME_PRIMARY1_INDEX);
+#else
   etx_txt_color(titleLabel, COLOR_THEME_PRIMARY2_INDEX);
+#endif
 
   lv_obj_set_pos(titleLabel, PageHeader::PAGE_TITLE_LEFT, PageHeader::PAGE_TITLE_TOP + EdgeTxStyles::STD_FONT_HEIGHT);
   lv_obj_set_size(titleLabel, LCD_W - PageHeader::PAGE_TITLE_LEFT - PageGroup::PAGE_GROUP_BACK_BTN_W * 2 - PAD_LARGE * 2, EdgeTxStyles::STD_FONT_HEIGHT);
@@ -87,6 +99,25 @@ PageGroupHeaderBase::PageGroupHeaderBase(Window* parent, coord_t height, EdgeTxI
 void PageGroupHeaderBase::setTitle(const char* title)
 {
   if (titleLabel) {
+    // Some translations (e.g. Chinese) render both the parent title and the
+    // tab title as the same string. Hide the second line when it duplicates
+    // the first, and vertically center the remaining line.
+    const char* parentText =
+        parentLabel ? lv_label_get_text(parentLabel) : nullptr;
+    bool duplicate = parentText && title && strcmp(parentText, title) == 0;
+#if defined(PCBPA01)
+    if (duplicate) {
+      lv_obj_add_flag(titleLabel, LV_OBJ_FLAG_HIDDEN);
+      if (parentLabel) {
+        lv_obj_set_y(parentLabel,
+                     (PageHeader::PAGE_TITLE_TOP +
+                      EdgeTxStyles::STD_FONT_HEIGHT / 2));
+      }
+    } else {
+      lv_obj_clear_flag(titleLabel, LV_OBJ_FLAG_HIDDEN);
+      if (parentLabel) lv_obj_set_y(parentLabel, PageHeader::PAGE_TITLE_TOP);
+    }
+#endif
     lv_label_set_text(titleLabel, title);
   }
 }

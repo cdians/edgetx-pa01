@@ -297,7 +297,7 @@ class MenuWindowContent : public NavWindow
     setFlexLayout(LV_FLEX_FLOW_COLUMN, PAD_ZERO, w, LV_SIZE_CONTENT);
 
     header = new StaticText(this, {0, 0, LV_PCT(100), 0}, "",
-                            COLOR_THEME_PRIMARY2_INDEX);
+                            COLOR_THEME_ON_DARK_INDEX);
     etx_solid_bg(header->getLvObj(), COLOR_THEME_SECONDARY1_INDEX);
     header->padAll(PAD_SMALL);
     header->hide();

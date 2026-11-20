@@ -25,22 +25,58 @@
 
 #include <algorithm>
 
+// PA01 ships with a dark UI. These are compiled into both the runtime color
+// table and the default-theme palette, so every control (page header, setup
+// cards, date/time picker, secondary menus) inherits them consistently.
+// Accent (FOCUS / ACTIVE) matches the pink power-key LED.
+#if defined(PCBPA01)
+  #define THEME_PRIMARY1   RGB(232, 236, 242)  // text on dark surfaces
+  #define THEME_PRIMARY2   RGB(18, 21, 27)     // control/card background (near black)
+  #define THEME_PRIMARY3   RGB(28, 40, 51)     // deep blue-grey accent surface
+  #define THEME_SECONDARY1 RGB(38, 44, 56)     // header bar + control text (dark slate)
+  #define THEME_SECONDARY2 RGB(70, 78, 94)     // borders / secondary text
+  #define THEME_SECONDARY3 RGB(28, 33, 43)     // secondary background
+  #define THEME_FOCUS      RGB(255, 95, 162)   // pink accent (matches power LED)
+  #define THEME_EDIT       RGB(0, 153, 9)
+  #define THEME_ACTIVE     RGB(255, 95, 162)   // pink checked state
+  #define THEME_WARNING    RGB(224, 0, 0)
+  #define THEME_DISABLED   RGB(120, 124, 132)
+  #define THEME_QM_BG      RGB(14, 16, 22)
+  #define THEME_QM_FG      RGB(232, 236, 242)
+  #define THEME_CUSTOM     RGB(255, 95, 162)
+#else
+  #define THEME_PRIMARY1   RGB(0, 0, 0)
+  #define THEME_PRIMARY2   RGB(255, 255, 255)
+  #define THEME_PRIMARY3   RGB(12, 63, 102)
+  #define THEME_SECONDARY1 RGB(18, 94, 153)
+  #define THEME_SECONDARY2 RGB(182, 224, 242)
+  #define THEME_SECONDARY3 RGB(228, 238, 242)
+  #define THEME_FOCUS      RGB(20, 161, 229)
+  #define THEME_EDIT       RGB(0, 153, 9)
+  #define THEME_ACTIVE     RGB(255, 222, 0)
+  #define THEME_WARNING    RGB(224, 0, 0)
+  #define THEME_DISABLED   RGB(140, 140, 140)
+  #define THEME_QM_BG      RGB(0, 0, 0)
+  #define THEME_QM_FG      RGB(255, 255, 255)
+  #define THEME_CUSTOM     RGB(170, 85, 0)
+#endif
+
 const uint16_t defaultColors[] = {
     // Theme
-    RGB(0, 0, 0),        // PRIMARY1
-    RGB(255, 255, 255),  // PRIMARY2
-    RGB(12, 63, 102),    // PRIMARY3
-    RGB(18, 94, 153),    // SECONDARY1
-    RGB(182, 224, 242),  // SECONDARY2
-    RGB(228, 238, 242),  // SECONDARY3
-    RGB(20, 161, 229),   // FOCUS
-    RGB(0, 153, 9),      // EDIT
-    RGB(255, 222, 0),    // ACTIVE
-    RGB(224, 0, 0),      // WARNING
-    RGB(140, 140, 140),  // DISABLED
-    RGB(0, 0, 0),        // Quick Menu Background
-    RGB(255, 255, 255),  // Quick Menu Foreground
-    RGB(170, 85, 0),     // CUSTOM
+    THEME_PRIMARY1,    // PRIMARY1
+    THEME_PRIMARY2,    // PRIMARY2
+    THEME_PRIMARY3,    // PRIMARY3
+    THEME_SECONDARY1,  // SECONDARY1
+    THEME_SECONDARY2,  // SECONDARY2
+    THEME_SECONDARY3,  // SECONDARY3
+    THEME_FOCUS,       // FOCUS
+    THEME_EDIT,        // EDIT
+    THEME_ACTIVE,      // ACTIVE
+    THEME_WARNING,     // WARNING
+    THEME_DISABLED,    // DISABLED
+    THEME_QM_BG,       // Quick Menu Background
+    THEME_QM_FG,       // Quick Menu Foreground
+    THEME_CUSTOM,      // CUSTOM
     // Fixed
     RGB(0x00, 0x00, 0x00), // BLACK
     RGB(0xFF, 0xFF, 0xFF), // WHITE
@@ -67,20 +103,20 @@ const uint16_t defaultColors[] = {
 // Needs to be initialised at compile time so widget color options work
 uint16_t lcdColorTable[] = {
     // Theme
-    RGB(0, 0, 0),        // PRIMARY1
-    RGB(255, 255, 255),  // PRIMARY2
-    RGB(12, 63, 102),    // PRIMARY3
-    RGB(18, 94, 153),    // SECONDARY1
-    RGB(182, 224, 242),  // SECONDARY2
-    RGB(228, 238, 242),  // SECONDARY3
-    RGB(20, 161, 229),   // FOCUS
-    RGB(0, 153, 9),      // EDIT
-    RGB(255, 222, 0),    // ACTIVE
-    RGB(224, 0, 0),      // WARNING
-    RGB(140, 140, 140),  // DISABLED
-    RGB(0, 0, 0),        // Quick Menu Background
-    RGB(255, 255, 255),  // Quick Menu Foreground
-    RGB(170, 85, 0),     // CUSTOM
+    THEME_PRIMARY1,    // PRIMARY1
+    THEME_PRIMARY2,    // PRIMARY2
+    THEME_PRIMARY3,    // PRIMARY3
+    THEME_SECONDARY1,  // SECONDARY1
+    THEME_SECONDARY2,  // SECONDARY2
+    THEME_SECONDARY3,  // SECONDARY3
+    THEME_FOCUS,       // FOCUS
+    THEME_EDIT,        // EDIT
+    THEME_ACTIVE,      // ACTIVE
+    THEME_WARNING,     // WARNING
+    THEME_DISABLED,    // DISABLED
+    THEME_QM_BG,       // Quick Menu Background
+    THEME_QM_FG,       // Quick Menu Foreground
+    THEME_CUSTOM,      // CUSTOM
     // Fixed
     RGB(0x00, 0x00, 0x00), // BLACK
     RGB(0xFF, 0xFF, 0xFF), // WHITE

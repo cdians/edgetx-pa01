@@ -31,6 +31,28 @@ class TrimIcon : public SliderIcon
  public:
   TrimIcon(Window* parent, bool isVertical) : SliderIcon(parent)
   {
+#if defined(PCBPA01)
+    // A trim sits in the same slot as a slider, 12px away, so one cue is not
+    // enough. Two: size (trim 10px against the slider's 15px) and colour (the
+    // muted rail slate against the pink accent). Out-of-range still turns the
+    // trim red.
+    if (knob) {
+      constexpr coord_t TRIM_KNOB = 10;
+      lv_obj_set_size(knob, TRIM_KNOB, TRIM_KNOB);
+      lv_obj_set_pos(knob, (SliderIcon::SLIDER_ICON_SIZE - TRIM_KNOB) / 2,
+                     (SliderIcon::SLIDER_ICON_SIZE - TRIM_KNOB) / 2);
+      // Rounded square, not a disc. Shape is the third cue on top of size and
+      // colour: a 10px square reads as a different *kind* of handle than the
+      // 15px pink disc even when you only catch it out of the corner of your eye.
+      lv_obj_set_style_radius(knob, 3, LV_PART_MAIN);
+      etx_solid_bg(knob, COLOR_THEME_SECONDARY2_INDEX);
+      etx_bg_color(knob, COLOR_THEME_WARNING_INDEX, LV_STATE_USER_1);
+      // A 1px rim keeps the dot readable where it overlaps the rail.
+      lv_obj_set_style_border_width(knob, 1, LV_PART_MAIN);
+      etx_border_color(knob, COLOR_THEME_PRIMARY2_INDEX);
+    }
+    return;
+#else
     lv_coord_t lw = SLIDER_MASK_SIZE > 15 ? 2 : 1;
     lv_coord_t x1 = SLIDER_MASK_SIZE / 5 + 1;
     lv_coord_t x2 = SLIDER_ICON_SIZE - x1;
@@ -51,20 +73,25 @@ class TrimIcon : public SliderIcon
 
     bar1 = lv_line_create(lvobj);
     etx_obj_add_style(bar1, styles->div_line_white, LV_PART_MAIN);
-    etx_obj_add_style(bar1, styles->div_line_black, LV_STATE_USER_1);
     lv_obj_set_style_line_width(bar1, lw, LV_PART_MAIN);
     lv_line_set_points(bar1, &barPoints[0], 2);
     bar2 = lv_line_create(lvobj);
     etx_obj_add_style(bar2, styles->div_line_white, LV_PART_MAIN);
-    etx_obj_add_style(bar2, styles->div_line_black, LV_STATE_USER_1);
     lv_obj_set_style_line_width(bar2, lw, LV_PART_MAIN);
     lv_line_set_points(bar2, &barPoints[2], 2);
 
     etx_img_color(mask, COLOR_THEME_ACTIVE_INDEX, LV_STATE_USER_1);
+#endif
   }
 
   void setState(int value)
   {
+#if defined(PCBPA01)
+    if (value < TRIM_MIN || value > TRIM_MAX)
+      lv_obj_add_state(knob, LV_STATE_USER_1);
+    else
+      lv_obj_clear_state(knob, LV_STATE_USER_1);
+#else
     if (value < TRIM_MIN || value > TRIM_MAX) {
       lv_obj_add_state(mask, LV_STATE_USER_1);
       lv_obj_add_state(bar1, LV_STATE_USER_1);
@@ -84,6 +111,7 @@ class TrimIcon : public SliderIcon
       lv_obj_clear_flag(bar2, LV_OBJ_FLAG_HIDDEN);
     else
       lv_obj_add_flag(bar2, LV_OBJ_FLAG_HIDDEN);
+#endif
   }
 
  protected:
@@ -97,6 +125,21 @@ MainViewTrim::MainViewTrim(Window* parent, const rect_t& rect, uint8_t idx,
     Window(parent, rect), idx(idx), isVertical(isVertical)
 {
   trimBar = lv_obj_create(lvobj);
+#if defined(PCBPA01)
+  // Match the slider rail in colour, width, radius *and* span: a trim sitting
+  // in the same slot as a slider then reads as one track with two knobs
+  // instead of two nested bars of different sizes.
+  etx_solid_bg(trimBar, COLOR_THEME_SECONDARY1_INDEX);
+  etx_obj_add_style(trimBar, styles->rounded, LV_PART_MAIN);
+  constexpr coord_t rw = MainViewSlider::RAIL_W;
+  if (isVertical) {
+    lv_obj_set_pos(trimBar, (SliderIcon::SLIDER_ICON_SIZE - rw) / 2, 0);
+    lv_obj_set_size(trimBar, rw, height());
+  } else {
+    lv_obj_set_pos(trimBar, 0, (SliderIcon::SLIDER_ICON_SIZE - rw) / 2);
+    lv_obj_set_size(trimBar, width(), rw);
+  }
+#else
   etx_solid_bg(trimBar, COLOR_THEME_SECONDARY1_INDEX);
   etx_obj_add_style(trimBar, styles->rounded, LV_PART_MAIN);
   if (isVertical) {
@@ -110,13 +153,33 @@ MainViewTrim::MainViewTrim(Window* parent, const rect_t& rect, uint8_t idx,
     lv_obj_set_size(trimBar, MainViewSlider::HORIZONTAL_SLIDERS_WIDTH - SliderIcon::SLIDER_ICON_SIZE + 1,
                     TRIM_LINE_WIDTH);
   }
+#endif
+
+#if defined(PCBPA01)
+  // Centre cue: a 14x2px accent bar across the rail. It is created before the
+  // knob so the 10px knob covers its middle when home, leaving a 2px stub on
+  // each side; it is hidden whenever the trim is off centre.
+  centerMark = lv_obj_create(lvobj);
+  lv_obj_remove_style_all(centerMark);
+  lv_obj_clear_flag(centerMark, LV_OBJ_FLAG_CLICKABLE);
+  etx_solid_bg(centerMark, COLOR_THEME_FOCUS_INDEX);
+  lv_obj_set_style_radius(centerMark, 1, LV_PART_MAIN);
+  if (isVertical) {
+    lv_obj_set_size(centerMark, 14, 2);
+    lv_obj_set_pos(centerMark, (width() - 14) / 2, height() / 2 - 1);
+  } else {
+    lv_obj_set_size(centerMark, 2, 14);
+    lv_obj_set_pos(centerMark, width() / 2 - 1, (height() - 14) / 2);
+  }
+  lv_obj_add_flag(centerMark, LV_OBJ_FLAG_HIDDEN);
+#endif
 
   trimIcon = new TrimIcon(this, isVertical);
 
   trimValue = new DynamicNumber<int16_t>(
       this, {0, 0, SliderIcon::SLIDER_ICON_SIZE, SliderIcon::SLIDER_MASK_SIZE},
       [=]() { return divRoundClosest(abs(value) * 100, trimMax); },
-      COLOR_THEME_PRIMARY2_INDEX, FONT(XXS) | CENTERED);
+      COLOR_THEME_ON_DARK_INDEX, FONT(XXS) | CENTERED);
   etx_solid_bg(trimValue->getLvObj(), COLOR_THEME_SECONDARY1_INDEX);
   trimValue->padTop(TRIM_VAL_YO);
   trimValue->hide();
@@ -144,6 +207,13 @@ void MainViewTrim::setPos()
 
   lv_obj_set_pos(trimIcon->getLvObj(), x, y);
   trimIcon->setState(value);
+
+#if defined(PCBPA01)
+  if (value == 0)
+    lv_obj_clear_flag(centerMark, LV_OBJ_FLAG_HIDDEN);
+  else
+    lv_obj_add_flag(centerMark, LV_OBJ_FLAG_HIDDEN);
+#endif
 
   if ((g_model.displayTrims == DISPLAY_TRIMS_ALWAYS) ||
       ((g_model.displayTrims == DISPLAY_TRIMS_CHANGE) &&

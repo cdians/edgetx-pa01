@@ -69,7 +69,12 @@ class TextWidget : public Widget
     lv_label_set_text(label, widgetData->options[0].value.stringValue.c_str());
 
     // get font color from options[1]
-    etx_txt_color_from_flags(label, widgetData->options[1].value.unsignedValue);
+    LcdFlags color = widgetData->options[1].value.unsignedValue;
+#if defined(PCBPA01)
+    // Models store colours picked for the stock light background.
+    color = pa01ReadableColor(color, COLOR_THEME_PRIMARY1_INDEX);
+#endif
+    etx_txt_color_from_flags(label, color);
     // get font size from options[2]
     lv_style_set_text_font(
         &style, getFont(widgetData->options[2].value.unsignedValue << 8));
@@ -91,7 +96,8 @@ class TextWidget : public Widget
 const WidgetOption TextWidget::options[] = {
     {STR_TEXT, WidgetOption::String,
      WIDGET_OPTION_VALUE_STRING(TEXT_WIDGET_DEFAULT_LABEL)},
-    {STR_COLOR, WidgetOption::Color, COLOR2FLAGS(COLOR_THEME_SECONDARY1_INDEX)},
+    {STR_COLOR, WidgetOption::Color,
+     COLOR2FLAGS(COLOR_THEME_SECONDARY_FG_INDEX)},
     {STR_SIZE, WidgetOption::TextSize, 0},
     {STR_SHADOW, WidgetOption::Bool, false},
     {STR_ALIGNMENT, WidgetOption::Align, ALIGN_LEFT},

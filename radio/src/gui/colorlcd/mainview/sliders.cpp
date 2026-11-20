@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (C) EdgeTX
  *
  * Based on code named
@@ -34,11 +34,32 @@ SliderIcon::SliderIcon(Window* parent) :
 {
   setWindowFlag(NO_FOCUS);
 
+#if defined(PCBPA01)
+  // Plain object instead of the alpha-mask canvas: on the PA01 target the
+  // canvas path left a transparent seam across the middle of the knob.
+  knob = lv_obj_create(lvobj);
+  lv_obj_remove_style_all(knob);
+  lv_obj_set_style_radius(knob, LV_RADIUS_CIRCLE, LV_PART_MAIN);
+  etx_solid_bg(knob, COLOR_THEME_FOCUS_INDEX);
+  // Dark rim, as in the approved design. It also keeps two knobs that sit in
+  // adjacent slots (a trim above a slider) from merging into one shape.
+  lv_obj_set_style_border_width(knob, 2, LV_PART_MAIN);
+  etx_border_color(knob, COLOR_THEME_PRIMARY2_INDEX);
+  lv_obj_set_style_border_opa(knob, LV_OPA_COVER, LV_PART_MAIN);
+  lv_obj_set_size(knob, SLIDER_ICON_SIZE, SLIDER_ICON_SIZE);
+  lv_obj_clear_flag(knob, LV_OBJ_FLAG_CLICKABLE);
+  return;
+#endif
+
   shadow = lv_canvas_create(lvobj);
   lv_canvas_set_buffer(shadow, maskBuffer, SLIDER_MASK_SIZE, SLIDER_MASK_SIZE, LV_IMG_CF_ALPHA_8BIT);
   etx_img_color(shadow, COLOR_THEME_PRIMARY1_INDEX);
   lv_obj_set_style_img_opa(shadow, LV_OPA_40, LV_PART_MAIN);
   lv_obj_set_pos(shadow, 2, 2);
+#if defined(PCBPA01)
+  // Flat design: the offset copy read as a blurry edge on the dark background.
+  lv_obj_add_flag(shadow, LV_OBJ_FLAG_HIDDEN);
+#endif
 
   mask = lv_canvas_create(lvobj);
   lv_canvas_set_buffer(mask, maskBuffer, SLIDER_MASK_SIZE, SLIDER_MASK_SIZE, LV_IMG_CF_ALPHA_8BIT);
@@ -51,7 +72,12 @@ SliderIcon::SliderIcon(Window* parent) :
     lv_draw_rect_dsc_t rect_dsc;
     lv_draw_rect_dsc_init(&rect_dsc);
     rect_dsc.bg_opa = LV_OPA_COVER;
+#if defined(PCBPA01)
+    // Round knob instead of the legacy pink square.
+    rect_dsc.radius = LV_RADIUS_CIRCLE;
+#else
     rect_dsc.radius = PAD_THREE;
+#endif
     lv_canvas_draw_rect(mask, 0, 0, SLIDER_MASK_SIZE, SLIDER_MASK_SIZE, &rect_dsc);
   }
 }
@@ -64,6 +90,32 @@ MainViewSlider::MainViewSlider(Window* parent, const rect_t& rect, uint8_t idx,
 {
   potIdx = adcGetInputOffset(ADC_INPUT_FLEX) + idx;
 
+#if defined(PCBPA01)
+  // One geometry for the whole slider: a rail that spans the full slot, a pink
+  // fill from the midpoint and a round knob. The legacy tick ladder is dropped
+  // here - it was drawn as a separate mask that never lined up with the rail.
+  track = lv_obj_create(lvobj);
+  lv_obj_remove_style_all(track);
+  lv_obj_set_style_radius(track, LV_RADIUS_CIRCLE, LV_PART_MAIN);
+  etx_solid_bg(track, COLOR_THEME_SECONDARY1_INDEX);
+  lv_obj_set_style_bg_opa(track, LV_OPA_COVER, LV_PART_MAIN);
+  lv_obj_clear_flag(track, LV_OBJ_FLAG_CLICKABLE);
+  if (isVertical) {
+    lv_obj_set_size(track, RAIL_W, height());
+    lv_obj_set_pos(track, (SliderIcon::SLIDER_ICON_SIZE - RAIL_W) / 2, 0);
+  } else {
+    lv_obj_set_size(track, width(), RAIL_W);
+    lv_obj_set_pos(track, 0, (SliderIcon::SLIDER_ICON_SIZE - RAIL_W) / 2);
+  }
+
+  fill = lv_obj_create(lvobj);
+  lv_obj_remove_style_all(fill);
+  lv_obj_set_style_radius(fill, LV_RADIUS_CIRCLE, LV_PART_MAIN);
+  etx_solid_bg(fill, COLOR_THEME_FOCUS_INDEX);
+  lv_obj_set_style_bg_opa(fill, LV_OPA_60, LV_PART_MAIN);
+  lv_obj_clear_flag(fill, LV_OBJ_FLAG_CLICKABLE);
+  lv_obj_add_flag(fill, LV_OBJ_FLAG_HIDDEN);
+#else
   auto mask = getTicksMask();
 
   if (mask) {
@@ -77,6 +129,7 @@ MainViewSlider::MainViewSlider(Window* parent, const rect_t& rect, uint8_t idx,
       lv_obj_set_pos(maskCanvas, SliderIcon::SLIDER_ICON_SIZE / 2, 2);
     }
   }
+#endif
 
   sliderIcon = new SliderIcon(this);
 
@@ -163,6 +216,26 @@ void MainViewSlider::setPos()
                         2 * RESX);
   }
   lv_obj_set_pos(sliderIcon->getLvObj(), x, y);
+
+#if defined(PCBPA01)
+  if (fill) {
+    coord_t mid = (isVertical ? height() : width()) / 2;
+    coord_t knob = (isVertical ? y : x) + SliderIcon::SLIDER_ICON_SIZE / 2;
+    coord_t from = mid < knob ? mid : knob;
+    coord_t len = (mid < knob ? knob : mid) - from;
+
+    if (len < 2) {
+      lv_obj_add_flag(fill, LV_OBJ_FLAG_HIDDEN);
+    } else {
+      lv_obj_clear_flag(fill, LV_OBJ_FLAG_HIDDEN);
+      if (isVertical)
+        lv_obj_set_pos(fill, (SliderIcon::SLIDER_ICON_SIZE - RAIL_W) / 2, from);
+      else
+        lv_obj_set_pos(fill, from, (SliderIcon::SLIDER_ICON_SIZE - RAIL_W) / 2);
+      lv_obj_set_size(fill, isVertical ? RAIL_W : len, isVertical ? len : RAIL_W);
+    }
+  }
+#endif
 }
 
 void MainViewSlider::checkEvents()
@@ -202,14 +275,19 @@ MainView6POS::MainView6POS(Window* parent, uint8_t idx) :
     lv_label_set_text(p, num);
     lv_obj_set_size(p, MULTIPOS_SZ, MULTIPOS_SZ);
     lv_obj_set_pos(p, x, 0);
-    etx_txt_color(p, COLOR_THEME_SECONDARY1_INDEX, LV_PART_MAIN);
+    etx_txt_color(p, COLOR_THEME_SECONDARY_FG_INDEX, LV_PART_MAIN);
     x += MULTIPOS_W_SPACING;
   }
 
   posIcon = new SliderIcon(this);
   posVal = etx_label_create(posIcon->getLvObj(), FONT_BOLD_INDEX);
-  lv_obj_set_pos(posVal, PAD_SMALL, -PAD_TINY);
   lv_obj_set_size(posVal, MULTIPOS_SZ, MULTIPOS_SZ);
+#if defined(PCBPA01)
+  // The knob is a circle now, so the position digit must be centred in it.
+  lv_obj_center(posVal);
+#else
+  lv_obj_set_pos(posVal, PAD_SMALL, -PAD_TINY);
+#endif
   etx_txt_color(posVal, COLOR_THEME_PRIMARY2_INDEX, LV_PART_MAIN);
 
   checkEvents();

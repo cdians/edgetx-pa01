@@ -38,6 +38,11 @@ class SliderIcon : public Window
  protected:
   lv_obj_t* mask = nullptr;
   lv_obj_t* shadow = nullptr;
+#if defined(PCBPA01)
+  // Plain circle instead of the alpha-mask canvas (see sliders.cpp). Kept as a
+  // member so TrimIcon can restyle it into a ring.
+  lv_obj_t* knob = nullptr;
+#endif
 
   static bool maskCreated;
   static uint8_t maskBuffer[SLIDER_MASK_SIZE * SLIDER_MASK_SIZE];
@@ -65,10 +70,22 @@ class MainViewSlider : public Window
   static constexpr coord_t VERTICAL_SLIDERS_HEIGHT = SLIDER_SIZE + SliderIcon::SLIDER_ICON_SIZE;
   static constexpr coord_t MASK_SHORT_DIM = SliderIcon::SLIDER_MASK_SIZE - 2;
 
+#if defined(PCBPA01)
+  // Width of the capsule rail. Trims reuse it so a trim stacked on top of a
+  // slider does not read as a second, differently sized bar.
+  static constexpr coord_t RAIL_W = 5;
+#endif
+
  protected:
   uint8_t potIdx;
   int16_t value = 0;
   bool isVertical;
+  lv_obj_t* track = nullptr;
+#if defined(PCBPA01)
+  // Pink fill drawn from the middle of the rail towards the knob, so the eye
+  // reads the deflection instead of a floating dot on a stick.
+  lv_obj_t* fill = nullptr;
+#endif
   lv_obj_t* maskCanvas = nullptr;
   SliderIcon* sliderIcon = nullptr;
   static std::vector<MaskBitmap*> tickMasks;

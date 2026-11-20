@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (C) EdgeTX
  *
  * Based on code named
@@ -62,7 +62,7 @@ static void viewOption(Window* parent, coord_t x, coord_t y,
                 std::function<void(uint8_t)> setValue, bool globalState)
 {
   auto lbl = new StaticText(parent, {x + ModelSetupPage::OPTS_W + PAD_MEDIUM, y + PAD_SMALL + 1, 0, 0},
-                          STR_ADCFILTERVALUES[globalState ? 1 : 2], COLOR_THEME_SECONDARY1_INDEX);
+                          STR_ADCFILTERVALUES[globalState ? 1 : 2], COLOR_THEME_SECONDARY_FG_INDEX);
   new Choice(parent, {x, y, ModelSetupPage::OPTS_W, 0}, STR_ADCFILTERVALUES, 0, 2, getValue,
               [=](int newValue) {
                 setValue(newValue);
@@ -451,27 +451,27 @@ const static SetupLineDef setupLines[] = {
 
 const static PageButtonDef modelSetupButtons[] = {
   // Modules
-  {STR_DEF(STR_INTERNALRF), []() { new ModulePage(INTERNAL_MODULE); }, []() { return g_model.moduleData[INTERNAL_MODULE].type > 0; }},
-  {STR_DEF(STR_EXTERNALRF), []() { new ModulePage(EXTERNAL_MODULE); }, []() { return g_model.moduleData[EXTERNAL_MODULE].type > 0; }},
-  {STR_DEF(STR_TRAINER), []() { new TrainerPage(); }, []() { return g_model.trainerData.mode > 0; }},
+  {STR_DEF(STR_INTERNALRF), []() { new ModulePage(INTERNAL_MODULE); }, []() { return g_model.moduleData[INTERNAL_MODULE].type > 0; }, nullptr, ICON_RADIO_HARDWARE},
+  {STR_DEF(STR_EXTERNALRF), []() { new ModulePage(EXTERNAL_MODULE); }, []() { return g_model.moduleData[EXTERNAL_MODULE].type > 0; }, nullptr, ICON_MODEL_TELEMETRY},
+  {STR_DEF(STR_TRAINER), []() { new TrainerPage(); }, []() { return g_model.trainerData.mode > 0; }, nullptr, ICON_RADIO_TRAINER},
   // Timer buttons
-  {STR_DEF(STR_TIMER_1), []() { new TimerWindow(0); }, []() { return g_model.timers[0].mode > 0; }},
-  {STR_DEF(STR_TIMER_2), []() { new TimerWindow(1); }, []() { return g_model.timers[1].mode > 0; }},
-  {STR_DEF(STR_TIMER_3), []() { new TimerWindow(2); }, []() { return g_model.timers[2].mode > 0; }},
+  {STR_DEF(STR_TIMER_1), []() { new TimerWindow(0); }, []() { return g_model.timers[0].mode > 0; }, nullptr, ICON_STATS_TIMERS},
+  {STR_DEF(STR_TIMER_2), []() { new TimerWindow(1); }, []() { return g_model.timers[1].mode > 0; }, nullptr, ICON_STATS_TIMERS},
+  {STR_DEF(STR_TIMER_3), []() { new TimerWindow(2); }, []() { return g_model.timers[2].mode > 0; }, nullptr, ICON_STATS_TIMERS},
 
-  {STR_DEF(STR_PREFLIGHT), []() { new PreflightChecks(); }},
-  {STR_DEF(STR_TRIMS), []() { new SubPage(ICON_MODEL_SETUP, STR_MAIN_MODEL_SETTINGS, STR_TRIMS, trimsSetupLines); }},
-  {STR_DEF(STR_THROTTLE_LABEL), []() { new SubPage(ICON_MODEL_SETUP, STR_MAIN_MODEL_SETTINGS, STR_THROTTLE_LABEL, throttleParamsSetupLines); }},
-  {STR_DEF(STR_ENABLED_FEATURES), []() { new SubPage(ICON_MODEL_SETUP, STR_MAIN_MODEL_SETTINGS, STR_ENABLED_FEATURES, viewOptionsPageSetupLines); }},
+  {STR_DEF(STR_PREFLIGHT), []() { new PreflightChecks(); }, nullptr, nullptr, ICON_ERROR},
+  {STR_DEF(STR_TRIMS), []() { new SubPage(ICON_MODEL_SETUP, STR_MAIN_MODEL_SETTINGS, STR_TRIMS, trimsSetupLines); }, nullptr, nullptr, ICON_MODEL_INPUTS},
+  {STR_DEF(STR_THROTTLE_LABEL), []() { new SubPage(ICON_MODEL_SETUP, STR_MAIN_MODEL_SETTINGS, STR_THROTTLE_LABEL, throttleParamsSetupLines); }, nullptr, nullptr, ICON_MODEL_MIXER},
+  {STR_DEF(STR_ENABLED_FEATURES), []() { new SubPage(ICON_MODEL_SETUP, STR_MAIN_MODEL_SETTINGS, STR_ENABLED_FEATURES, viewOptionsPageSetupLines); }, nullptr, nullptr, ICON_STATS},
 #if defined(USBJ_EX)
-  {STR_DEF(STR_USBJOYSTICK_LABEL), []() { new ModelUSBJoystickPage(); }},
+  {STR_DEF(STR_USBJOYSTICK_LABEL), []() { new ModelUSBJoystickPage(); }, nullptr, nullptr, ICON_MODEL_USB},
 #endif
 #if defined(FUNCTION_SWITCHES)
-  {STR_DEF(STR_FUNCTION_SWITCHES), []() { new ModelFunctionSwitches(); }},
+  {STR_DEF(STR_FUNCTION_SWITCHES), []() { new ModelFunctionSwitches(); }, nullptr, nullptr, ICON_MODEL_SPECIAL_FUNCTIONS},
 #endif
-  {STR_DEF(STR_MENU_OTHER), []() { new SubPage(ICON_MODEL_SETUP, STR_MAIN_MODEL_SETTINGS, STR_MENU_OTHER, otherPageSetupLines); }},
+  {STR_DEF(STR_MENU_OTHER), []() { new SubPage(ICON_MODEL_SETUP, STR_MAIN_MODEL_SETTINGS, STR_MENU_OTHER, otherPageSetupLines); }, nullptr, nullptr, ICON_MODEL_NOTES},
 #if defined(HELI)
-  {STR_DEF(STR_MENUHELISETUP), []() { return new ModelHeliPage(); }, nullptr, modelHeliEnabled},
+  {STR_DEF(STR_MENUHELISETUP), []() { return new ModelHeliPage(); }, nullptr, modelHeliEnabled, ICON_MODEL_HELI},
 #endif
   {nullptr},
 };

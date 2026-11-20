@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (C) EdgeTX
  *
  * Based on code named
@@ -38,7 +38,7 @@ class GhostModuleConfigWindow : public Window
       menuLines[i][0] = new StaticText(
           this, {xOffset, yOffset + i * lineSpacing, LV_SIZE_CONTENT, h}, "",
           COLOR_THEME_PRIMARY1_INDEX, FONT(L));
-      etx_txt_color(menuLines[i][0]->getLvObj(), COLOR_THEME_SECONDARY1_INDEX,
+      etx_txt_color(menuLines[i][0]->getLvObj(), COLOR_THEME_SECONDARY_FG_INDEX,
                     LV_PART_MAIN);
       etx_solid_bg(menuLines[i][0]->getLvObj(), COLOR_THEME_FOCUS_INDEX,
                    LV_STATE_USER_1);
@@ -48,7 +48,7 @@ class GhostModuleConfigWindow : public Window
       menuLines[i][1] = new StaticText(
           this, {xOffset2, yOffset + i * lineSpacing, LV_SIZE_CONTENT, h}, "",
           COLOR_THEME_PRIMARY1_INDEX, FONT(L));
-      etx_txt_color(menuLines[i][1]->getLvObj(), COLOR_THEME_SECONDARY1_INDEX,
+      etx_txt_color(menuLines[i][1]->getLvObj(), COLOR_THEME_SECONDARY_FG_INDEX,
                     LV_PART_MAIN);
     }
   }

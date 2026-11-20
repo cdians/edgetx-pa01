@@ -150,6 +150,11 @@ void etx_std_style(lv_obj_t* obj, lv_style_selector_t selector = LV_PART_MAIN,
 
 void etx_btn_style(lv_obj_t* obj, lv_style_selector_t selector = LV_PART_MAIN);
 
+// PA01: modern field surface for inputs/choices — flat lifted fill, restrained
+// corner radius and no permanent outline (the FOCUS outline supplies the pink
+// ring). No-op on other boards.
+void etx_field_style(lv_obj_t* obj, lv_style_selector_t selector = LV_PART_MAIN);
+
 void etx_std_ctrl_colors(lv_obj_t* obj,
                          lv_style_selector_t selector = LV_PART_MAIN);
 

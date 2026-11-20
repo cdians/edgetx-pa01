@@ -136,6 +136,11 @@ TextEdit::TextEdit(Window* parent, const rect_t& rect, char* text,
 
   if (rect.w == 0) setWidth(EdgeTxStyles::EDIT_FLD_WIDTH);
 
+  // PA01: modern flat field surface (no-op on other targets).
+  // TextEdit is a TextButton wrapper around the textarea, so without this it
+  // keeps the stock outlined pill from etx_btn_style().
+  etx_field_style(lvobj);
+
   update();
   lv_obj_align(label, LV_ALIGN_OUT_LEFT_MID, 0, PAD_TINY);
 }

@@ -25,6 +25,8 @@
 static void choice_constructor(const lv_obj_class_t* class_p, lv_obj_t* obj)
 {
   etx_std_style(obj, LV_PART_MAIN, PAD_TINY);
+  // PA01: same flat field surface as the text/number edits (no-op elsewhere).
+  etx_field_style(obj, LV_PART_MAIN);
   lv_obj_set_style_pad_hor(obj, PAD_MEDIUM, LV_PART_MAIN);
 }
 

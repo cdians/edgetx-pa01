@@ -34,12 +34,20 @@ LV_STYLE_CONST_MULTI_INIT(switch_knob, switch_knob_props);
 static void switch_constructor(const lv_obj_class_t* class_p, lv_obj_t* obj)
 {
   etx_std_style(obj, LV_PART_MAIN, PAD_ZERO);
+#if !defined(PCBPA01)
+  // Other boards want a full pill. PA01 keeps the small radius that
+  // etx_std_style() already applied, so the track matches the rest of its UI.
   etx_obj_add_style(obj, styles->circle, LV_PART_MAIN);
+#endif
   etx_obj_add_style(obj, anim_fast, LV_PART_MAIN);
 
   etx_std_style(obj, LV_PART_INDICATOR, PAD_ZERO);
+#if !defined(PCBPA01)
   etx_obj_add_style(obj, styles->circle, LV_PART_INDICATOR);
+#endif
 
+  // The knob stays a circle on every target: a squared knob inside a rounded
+  // track reads as a rendering fault rather than a design choice.
   etx_obj_add_style(obj, styles->bg_opacity_cover, LV_PART_KNOB);
   etx_obj_add_style(obj, styles->circle, LV_PART_KNOB);
   etx_obj_add_style(obj, switch_knob, LV_PART_KNOB);

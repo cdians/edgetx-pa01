@@ -655,6 +655,119 @@ void NavWindow::onLongPressTELE() { doKeyShortcut(EVT_KEY_LONG(KEY_TELE)); }
 
 //-----------------------------------------------------------------------------
 
+#if defined(PCBPA01)
+// ---------------------------------------------------------------------------
+// Uniform setup-card glyphs
+//
+// PA01 uses the 320x240 bitmap set, whose builtin masks are all 24x24 with the
+// artwork centred in the canvas. Only the oversized info/error glyph (77x77)
+// is out of scale, so it is downsampled to the same 24px optical size.
+//
+// lv_img_set_zoom() is not an option: LVGL's software transform only handles
+// true-colour images and our masks are LV_IMG_CF_ALPHA_8BIT. Instead resample
+// the oversized glyph to the common native size.
+// ---------------------------------------------------------------------------
+static constexpr uint16_t PA01_ICON_INK_SIZE = 24;
+
+static MaskBitmap* resampleMask(const MaskBitmap* src, uint16_t bx, uint16_t by,
+                                uint16_t bw, uint16_t bh, uint16_t ow, uint16_t oh)
+{
+  auto* dst = reinterpret_cast<MaskBitmap*>(
+      new uint8_t[sizeof(MaskBitmap) + (size_t)ow * oh]);
+  dst->width = ow;
+  dst->height = oh;
+
+  for (uint16_t dy = 0; dy < oh; dy += 1) {
+    uint16_t sy0 = by + (uint32_t)dy * bh / oh;
+    uint16_t sy1 = by + (uint32_t)(dy + 1) * bh / oh;
+    if (sy1 <= sy0) sy1 = sy0 + 1;
+    for (uint16_t dx = 0; dx < ow; dx += 1) {
+      uint16_t sx0 = bx + (uint32_t)dx * bw / ow;
+      uint16_t sx1 = bx + (uint32_t)(dx + 1) * bw / ow;
+      if (sx1 <= sx0) sx1 = sx0 + 1;
+      uint32_t sum = 0, n = 0;
+      for (uint16_t sy = sy0; sy < sy1; sy += 1) {
+        const uint8_t* row = src->data + (size_t)sy * src->width;
+        for (uint16_t sx = sx0; sx < sx1; sx += 1) {
+          sum += row[sx];
+          n += 1;
+        }
+      }
+      dst->data[(size_t)dy * ow + dx] = n ? (uint8_t)(sum / n) : 0;
+    }
+  }
+  return dst;
+}
+
+// Cards are rebuilt on every page entry, so the resampled buffers are cached:
+// they are handed to StaticIcon, which does not own them.
+static constexpr uint8_t PA01_ICON_CACHE_SLOTS = 16;
+static const MaskBitmap* pa01IconCache[PA01_ICON_CACHE_SLOTS] = {};
+static EdgeTxIcon pa01IconCacheId[PA01_ICON_CACHE_SLOTS] = {};
+static uint8_t pa01IconCacheNext = 0;
+
+static const MaskBitmap* pa01CardIcon(EdgeTxIcon icon)
+{
+  for (uint8_t i = 0; i < PA01_ICON_CACHE_SLOTS; i += 1)
+    if (pa01IconCache[i] && pa01IconCacheId[i] == icon) return pa01IconCache[i];
+
+  const MaskBitmap* src = getBuiltinIcon(icon);
+  const MaskBitmap* result = src;
+
+  if (src) {
+    uint16_t minX = src->width, minY = src->height, maxX = 0, maxY = 0;
+    for (uint16_t y = 0; y < src->height; y += 1) {
+      for (uint16_t x = 0; x < src->width; x += 1) {
+        if (src->data[(size_t)y * src->width + x] > 16) {
+          if (x < minX) minX = x;
+          if (x > maxX) maxX = x;
+          if (y < minY) minY = y;
+          if (y > maxY) maxY = y;
+        }
+      }
+    }
+    if (maxX >= minX && maxY >= minY) {
+      uint16_t bw = maxX - minX + 1;
+      uint16_t bh = maxY - minY + 1;
+      uint16_t maxDim = bw > bh ? bw : bh;
+      // Only shrink the outliers; upscaling would just blur the smaller glyphs.
+      if (maxDim > PA01_ICON_INK_SIZE) {
+        uint16_t ow = bw >= bh ? PA01_ICON_INK_SIZE
+                               : (uint16_t)((uint32_t)bw * PA01_ICON_INK_SIZE / maxDim);
+        uint16_t oh = bh >= bw ? PA01_ICON_INK_SIZE
+                               : (uint16_t)((uint32_t)bh * PA01_ICON_INK_SIZE / maxDim);
+        if (!ow) ow = 1;
+        if (!oh) oh = 1;
+        result = resampleMask(src, minX, minY, bw, bh, ow, oh);
+      }
+    }
+  }
+
+  pa01IconCache[pa01IconCacheNext] = result;
+  pa01IconCacheId[pa01IconCacheNext] = icon;
+  pa01IconCacheNext = (pa01IconCacheNext + 1) % PA01_ICON_CACHE_SLOTS;
+  return result;
+}
+
+// Quick Menu tiles invert their content while focused (light fill + dark
+// glyphs). The children carry the inverted styles on LV_STATE_USER_1, which we
+// toggle here: LVGL has no "child of a focused parent" pseudo-state.
+static void setup_tile_focus_cb(lv_event_t* e)
+{
+  lv_obj_t* obj = lv_event_get_target(e);
+  bool focused = lv_event_get_code(e) == LV_EVENT_FOCUSED;
+  uint32_t cnt = lv_obj_get_child_cnt(obj);
+  for (uint32_t i = 0; i < cnt; i += 1) {
+    lv_obj_t* child = lv_obj_get_child(obj, i);
+    if (focused) {
+      lv_obj_add_state(child, LV_STATE_USER_1);
+    } else {
+      lv_obj_clear_state(child, LV_STATE_USER_1);
+    }
+  }
+}
+#endif
+
 class SetupTextButton : public TextButton
 {
  public:
@@ -670,9 +783,73 @@ class SetupTextButton : public TextButton
       if (entry.enabled) show(entry.enabled());
     });
     setWrap();
+
+#if defined(PCBPA01)
+    // Adopt the Quick Menu tile language so the settings grids look like the
+    // rest of the UI: a lifted, borderless surface, a small caption and a
+    // full inversion while focused (no coloured outline).
+    etx_solid_bg(lvobj, COLOR_THEME_SECONDARY1_INDEX, LV_PART_MAIN);
+    // Focus uses the accent colour, matching the Quick Menu tiles and the LED.
+    etx_solid_bg(lvobj, COLOR_THEME_FOCUS_INDEX,
+                 LV_PART_MAIN | LV_STATE_FOCUSED);
+    lv_obj_set_style_border_width(lvobj, 0, LV_PART_MAIN);
+    lv_obj_set_style_shadow_width(lvobj, 0, LV_PART_MAIN);
+    lv_obj_set_style_outline_width(lvobj, 0, LV_PART_MAIN);
+    lv_obj_set_style_outline_width(lvobj, 0, LV_PART_MAIN | LV_STATE_FOCUSED);
+    padAll(PAD_SMALL);
+
+    lv_obj_add_event_cb(lvobj, setup_tile_focus_cb, LV_EVENT_FOCUSED, nullptr);
+    lv_obj_add_event_cb(lvobj, setup_tile_focus_cb, LV_EVENT_DEFOCUSED, nullptr);
+
+    if (label) {
+      // Small caption type on every setup card, like the Quick Menu tiles.
+      etx_font(label, FONT_XS_INDEX);
+      etx_txt_color(label, COLOR_THEME_PRIMARY2_INDEX,
+                    LV_PART_MAIN | LV_STATE_USER_1);
+    }
+
+    if (entry.icon != EDGETX_ICONS_COUNT) {
+      // PRIMARY1 keeps the glyph legible on the dark card body. The mask is
+      // normalised first so every card shows the same optical icon size.
+      const MaskBitmap* glyph = pa01CardIcon(entry.icon);
+      icon = glyph ? new StaticIcon(this, 0, 0, glyph, COLOR_THEME_PRIMARY1_INDEX)
+                   : new StaticIcon(this, 0, 0, entry.icon, COLOR_THEME_PRIMARY1_INDEX);
+      etx_img_color(icon->getLvObj(), COLOR_THEME_PRIMARY2_INDEX,
+                    LV_PART_MAIN | LV_STATE_USER_1);
+
+      // Icon on top, caption underneath, the pair centred in the card.
+      // Positions must be relative to the card's *content* area: lv_obj_set_pos()
+      // already starts inside the padding, so centring against width()/height()
+      // (which include the padding) pushed the block down and to the right.
+      if (label) {
+        lv_obj_set_width(label, lv_pct(100));
+        lv_label_set_long_mode(label, LV_LABEL_LONG_WRAP);
+        lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN);
+      }
+
+      lv_obj_update_layout(lvobj);
+      const coord_t contentW = lv_obj_get_content_width(lvobj);
+      const coord_t contentH = lv_obj_get_content_height(lvobj);
+      const coord_t labelH = label ? lv_obj_get_height(label) : 0;
+      const coord_t blockH =
+          icon->height() + (labelH ? labelH + PAD_TINY : 0);
+      coord_t top = (contentH - blockH) / 2;
+      if (top < 0) top = 0;
+
+      icon->setPos((contentW - icon->width()) / 2, top);
+
+      if (label) {
+        lv_obj_align(label, LV_ALIGN_TOP_MID, 0,
+                     top + icon->height() + PAD_TINY);
+      }
+    }
+#endif
   }
 
  protected:
+#if defined(PCBPA01)
+  StaticIcon* icon = nullptr;
+#endif
 };
 
 SetupButtonGroup::SetupButtonGroup(Window* parent, const rect_t& rect, int cols,

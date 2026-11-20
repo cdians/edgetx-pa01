@@ -784,6 +784,9 @@ int main(int argc, char* argv[])
   simuInit();
   simuFatfsSetPaths(args.getStoragePath().c_str(),
                     args.getSettingsPath().c_str());
+  // Silent-create default radio settings when no compatible settings exist,
+  // avoiding the blocking STORAGE WARNING alert on first run.
+  simuCreateDefaults();
   simuStart();
 
   // Main loop

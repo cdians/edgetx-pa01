@@ -386,8 +386,16 @@ int8_t rotaryEncoderGetAccel() { return 0; }
 void simuGuiHook();  // targets/simu/simulib.cpp
 #endif
 
+static bool lvglDriversReady = false;
+
 static void init_lvgl_drivers()
 {
+  // Guarded because the charging screen may bring the drivers up before the
+  // normal boot path does. Re-registering the input devices would double every
+  // key/touch event, so the second call must be a no-op.
+  if (lvglDriversReady) return;
+  lvglDriversReady = true;
+
   // Register the driver and save the created display object
   lcdInitDisplayDriver();
  
@@ -444,6 +452,15 @@ LvglWrapper* LvglWrapper::instance()
 {
   if (!_instance) _instance = new LvglWrapper();
   return _instance;
+}
+
+void lvglInitDisplayOnly()
+{
+  init_lvgl_drivers();
+
+  // lcdInitDisplayDriver() already calls useMainStyle(), so the etx_* helpers
+  // are usable from here on. Nothing else is needed to draw: the default screen
+  // is already stripped of styles and ready to take child objects.
 }
 
 void LvglWrapper::run()

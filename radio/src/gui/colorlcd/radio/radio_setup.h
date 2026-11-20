@@ -31,7 +31,16 @@ class RadioSetupPage: public PageGroupItem
   void build(Window * window) override;
 
   static LAYOUT_ORIENTATION(BTN_COLS, 3, 2)
+  // PA01: taller cards for the icon-over-label layout. The builtin icon masks
+  // are ~50x52 px and cannot be scaled down safely (the LVGL transform path
+  // does not support ALPHA_8BIT canvases), so the card has to be tall enough
+  // for the native icon plus one line of text: 52 + 2 + 17 = 71 px minimum.
+  // 105 scales to 84 px on the 320px-wide layout.
+#if defined(PCBPA01)
+  static LAYOUT_VAL_SCALED(BTN_H, 105)
+#else
   static LAYOUT_VAL_SCALED(BTN_H, 62)
+#endif
   static LAYOUT_VAL_SCALED(HATS_MODE_W, 120)
   static LAYOUT_VAL_SCALED(USB_MODE_W, 120)
 };

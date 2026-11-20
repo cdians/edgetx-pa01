@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (C) EdgeTX
  *
  * Based on code named
@@ -154,7 +154,7 @@ const static SetupLineDef setupLines[] = {
         s += " - ";
         s += STR_ADCFILTERVALUES[g_model.jitterFilter];
         new StaticText(parent, {x + ToggleSwitch::TOGGLE_W + PAD_MEDIUM, y + PAD_SMALL + 1, 0, 0},
-                       s.c_str(), COLOR_THEME_SECONDARY1_INDEX);
+                       s.c_str(), COLOR_THEME_SECONDARY_FG_INDEX);
       }
     }
   },
@@ -186,21 +186,21 @@ const static SetupLineDef setupLines[] = {
 };
 
 const static PageButtonDef calibrationButtons[] = {
-  {STR_DEF(STR_MENUCALIBRATION), []() { new RadioCalibrationPage(); }},
-  {STR_DEF(STR_STICKS), []() { new HWInputDialog<HWSticks>(STR_STICKS); }},
-  {STR_DEF(STR_POTS), []() { new HWInputDialog<HWPots>(STR_POTS, HWPots::POTS_WINDOW_WIDTH); }},
-  {STR_DEF(STR_SWITCHES), []() { new HWInputDialog<HWSwitches>(STR_SWITCHES, HWSwitches::SW_WINDOW_WIDTH); }},
+  {STR_DEF(STR_MENUCALIBRATION), []() { new RadioCalibrationPage(); }, nullptr, nullptr, ICON_RADIO_CALIBRATION},
+  {STR_DEF(STR_STICKS), []() { new HWInputDialog<HWSticks>(STR_STICKS); }, nullptr, nullptr, ICON_MODEL_INPUTS},
+  {STR_DEF(STR_POTS), []() { new HWInputDialog<HWPots>(STR_POTS, HWPots::POTS_WINDOW_WIDTH); }, nullptr, nullptr, ICON_STATS_ANALOGS},
+  {STR_DEF(STR_SWITCHES), []() { new HWInputDialog<HWSwitches>(STR_SWITCHES, HWSwitches::SW_WINDOW_WIDTH); }, nullptr, nullptr, ICON_MODEL_LOGICAL_SWITCHES},
 #if defined(FUNCTION_SWITCHES)
-  {STR_DEF(STR_FUNCTION_SWITCHES), []() { new RadioFunctionSwitches(); }},
+  {STR_DEF(STR_FUNCTION_SWITCHES), []() { new RadioFunctionSwitches(); }, nullptr, nullptr, ICON_MODEL_SPECIAL_FUNCTIONS},
 #endif
   {nullptr},
 };
 
 const static PageButtonDef debugButtons[] = {
-  {STR_DEF(STR_ANALOGS_BTN), []() { new RadioAnalogsDiagsViewPageGroup(); }},
-  {STR_DEF(STR_KEYS_BTN), []() { new RadioKeyDiagsPage(); }},
+  {STR_DEF(STR_ANALOGS_BTN), []() { new RadioAnalogsDiagsViewPageGroup(); }, nullptr, nullptr, ICON_STATS_ANALOGS},
+  {STR_DEF(STR_KEYS_BTN), []() { new RadioKeyDiagsPage(); }, nullptr, nullptr, ICON_RADIO_HARDWARE},
 #if defined(FUNCTION_SWITCHES)
-  {STR_DEF(STR_FS_BTN), []() { new RadioCustSwitchesDiagsPage(); }},
+  {STR_DEF(STR_FS_BTN), []() { new RadioCustSwitchesDiagsPage(); }, nullptr, nullptr, ICON_MODEL_SPECIAL_FUNCTIONS},
 #endif
   {nullptr},
 };
@@ -234,9 +234,9 @@ void RadioHardwarePage::build(Window* window)
 
   // Calibration
   new Subtitle(window, STR_INPUTS);
-  new SetupButtonGroup(window, {0, 0, LCD_W - padding * 2, 0}, BTN_COLS, calibrationButtons);
+  new SetupButtonGroup(window, {0, 0, LCD_W - padding * 2, 0}, BTN_COLS, calibrationButtons, BTN_H);
 
   // Debugs
   new Subtitle(window, STR_DEBUG);
-  new SetupButtonGroup(window, {0, 0, LCD_W - padding * 2, 0}, FS_BTN_COLS, debugButtons);
+  new SetupButtonGroup(window, {0, 0, LCD_W - padding * 2, 0}, FS_BTN_COLS, debugButtons, BTN_H);
 }

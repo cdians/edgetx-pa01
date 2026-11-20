@@ -138,6 +138,51 @@ extern const uint16_t defaultColors[];
 #define COLOR_THEME_ACTIVE COLOR(COLOR_THEME_ACTIVE_INDEX)
 #define COLOR_THEME_WARNING COLOR(COLOR_THEME_WARNING_INDEX)
 #define COLOR_THEME_DISABLED COLOR(COLOR_THEME_DISABLED_INDEX)
+
+// Text drawn on the dark header/footer plates (SECONDARY1 background). Stock
+// themes pair that plate with white text; the PA01 palette makes PRIMARY2 the
+// dark *surface* colour instead, so the light foreground must be used there.
+#if defined(PCBPA01)
+  #define COLOR_THEME_ON_DARK_INDEX COLOR_THEME_PRIMARY1_INDEX
+#else
+  #define COLOR_THEME_ON_DARK_INDEX COLOR_THEME_PRIMARY2_INDEX
+#endif
+
+// Secondary foreground (text or icon) drawn on the page background. Stock
+// pages are light and use SECONDARY1; the PA01 page background is dark and
+// SECONDARY1 is the dark plate colour there, so the light foreground keeps the
+// label readable.
+#if defined(PCBPA01)
+  #define COLOR_THEME_SECONDARY_FG_INDEX COLOR_THEME_PRIMARY1_INDEX
+#else
+  #define COLOR_THEME_SECONDARY_FG_INDEX COLOR_THEME_SECONDARY1_INDEX
+#endif
+
+#if defined(PCBPA01)
+// Widget colours live in the model file and were picked for the stock light
+// background. On the PA01 dark palette a stored near-black (or a themed
+// *surface* colour) disappears, so widgets resolve their colour through here.
+static inline uint16_t pa01Color565(LcdFlags f)
+{
+  if (f & RGB_FLAG) return (uint16_t)COLOR_VAL(f);
+  unsigned idx = COLOR_VAL(f) & 0xFF;
+  if (idx >= TOTAL_COLOR_COUNT) return 0xFFFF;
+  return lcdColorTable[idx];
+}
+
+static inline int pa01ColorLuma(LcdFlags f)
+{
+  uint16_t c = pa01Color565(f);
+  return 2 * ((c >> 11) & 0x1F) + 4 * ((c >> 5) & 0x3F) + (c & 0x1F);
+}
+
+// 110/279 ~= 39% relative luminance: below this a colour is unreadable on the
+// dark plates used by the main view.
+static inline LcdFlags pa01ReadableColor(LcdFlags f, LcdColorIndex fallback)
+{
+  return (pa01ColorLuma(f) < 110) ? COLOR2FLAGS(fallback) : f;
+}
+#endif
 #define COLOR_THEME_QM_BG COLOR(COLOR_THEME_QM_BG_INDEX)
 #define COLOR_THEME_QM_FG COLOR(COLOR_THEME_QM_FG_INDEX)
 #define CUSTOM_COLOR COLOR(CUSTOM_COLOR_INDEX)

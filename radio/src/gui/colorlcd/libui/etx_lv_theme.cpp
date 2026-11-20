@@ -51,7 +51,10 @@ LV_STYLE_CONST_SINGLE_INIT(EdgeTxStyles::fg_opacity_cover, LV_STYLE_OPA,
                            LV_OPA_COVER);
 
 // Corner rounding (button, edit box, etc)
-LV_STYLE_CONST_SINGLE_INIT(EdgeTxStyles::rounded, LV_STYLE_RADIUS, 6);
+// One radius for the whole UI: cards, quick-menu tiles, buttons, edit fields
+// and switch tracks all share it so the layout reads as a single system.
+#define ETX_CARD_RADIUS 6
+LV_STYLE_CONST_SINGLE_INIT(EdgeTxStyles::rounded, LV_STYLE_RADIUS, ETX_CARD_RADIUS);
 
 // Toggle switch and slider knob rounding
 LV_STYLE_CONST_SINGLE_INIT(EdgeTxStyles::circle, LV_STYLE_RADIUS,
@@ -130,9 +133,15 @@ const lv_style_const_prop_t pad_large_props[] = {
 };
 LV_STYLE_CONST_MULTI_INIT(EdgeTxStyles::pad_large, pad_large_props);
 
+// PA01: extra vertical padding so labels breathe inside large-radius cards.
+#if defined(PCBPA01)
+  #define ETX_BTN_PAD_V PAD_SMALL
+#else
+  #define ETX_BTN_PAD_V PAD_TINY
+#endif
 const lv_style_const_prop_t pad_button_props[] = {
-    LV_STYLE_CONST_PAD_TOP(PAD_TINY),
-    LV_STYLE_CONST_PAD_BOTTOM(PAD_TINY),
+    LV_STYLE_CONST_PAD_TOP(ETX_BTN_PAD_V),
+    LV_STYLE_CONST_PAD_BOTTOM(ETX_BTN_PAD_V),
     LV_STYLE_CONST_PAD_LEFT(PAD_MEDIUM),
     LV_STYLE_CONST_PAD_RIGHT(PAD_MEDIUM),
     LV_STYLE_CONST_PAD_ROW(PAD_TINY),
@@ -151,9 +160,15 @@ const lv_style_const_prop_t pad_textarea_props[] = {
 LV_STYLE_CONST_MULTI_INIT(EdgeTxStyles::pad_textarea, pad_textarea_props);
 
 // Border
+// PA01: hairline border for a lighter, modern card look.
+#if defined(PCBPA01)
+  #define ETX_BORDER_WIDTH 1
+#else
+  #define ETX_BORDER_WIDTH PAD_BORDER
+#endif
 const lv_style_const_prop_t border_props[] = {
     LV_STYLE_CONST_BORDER_OPA(LV_OPA_COVER),
-    LV_STYLE_CONST_BORDER_WIDTH(PAD_BORDER),
+    LV_STYLE_CONST_BORDER_WIDTH(ETX_BORDER_WIDTH),
     LV_STYLE_PROP_INV,
 };
 LV_STYLE_CONST_MULTI_INIT(EdgeTxStyles::border, border_props);
@@ -580,7 +595,14 @@ void etx_img_color(lv_obj_t* obj, LcdColorIndex colorIdx,
 void etx_std_ctrl_colors(lv_obj_t* obj, lv_style_selector_t selector)
 {
   etx_solid_bg(obj, COLOR_THEME_PRIMARY2_INDEX, selector);
+#if defined(PCBPA01)
+  // SECONDARY1 doubles as the PA01 header-bar background (dark slate in the
+  // dark palette), so it is too dim as unselected control text. Use the light
+  // PRIMARY1 for readability; checked state still uses PRIMARY1 + ACTIVE bg.
+  etx_txt_color(obj, COLOR_THEME_PRIMARY1_INDEX, selector);
+#else
   etx_txt_color(obj, COLOR_THEME_SECONDARY1_INDEX, selector);
+#endif
 
   etx_obj_add_style(obj, styles->border_color[COLOR_THEME_FOCUS_INDEX],
                     selector | LV_STATE_FOCUSED);
@@ -646,6 +668,29 @@ void etx_std_style(lv_obj_t* obj, lv_style_selector_t selector,
   etx_padding(obj, padding, selector);
 }
 
+void etx_field_style(lv_obj_t* obj, lv_style_selector_t selector)
+{
+#if defined(PCBPA01)
+  // Stock fields pair a 12px radius — a full pill on a UI_ELEMENT_HEIGHT tall
+  // control — with an always-on 1px outline, which is what made the old UI look
+  // dated. Flatten both: the lifted fill now identifies the field, its corners
+  // keep a restrained radius, and the FOCUS outline (pink) provides the ring.
+  lv_obj_set_style_radius(obj, 6, selector);
+  lv_obj_set_style_border_width(obj, 0, selector);
+  // Keep the text clear of the rounded corners now that no border frames it.
+  lv_obj_set_style_pad_left(obj, PAD_MEDIUM, selector);
+  lv_obj_set_style_pad_right(obj, PAD_MEDIUM, selector);
+  etx_solid_bg(obj, COLOR_THEME_PRIMARY3_INDEX, selector);
+  // Text/number edits used to signal focus by turning their border pink. With
+  // the border gone they need the accent outline (Choice already gets it from
+  // etx_std_settings; adding it twice is harmless).
+  etx_obj_add_style(obj, styles->outline, selector | LV_STATE_FOCUSED);
+#else
+  LV_UNUSED(obj);
+  LV_UNUSED(selector);
+#endif
+}
+
 void etx_scrollbar(lv_obj_t* obj)
 {
   etx_obj_add_style(obj, styles->scrollbar, LV_PART_SCROLLBAR);
@@ -672,6 +717,9 @@ static void textarea_constructor(const lv_obj_class_t* class_p, lv_obj_t* obj)
   etx_obj_add_style(obj, styles->rounded, LV_PART_MAIN);
   etx_std_ctrl_colors(obj, LV_PART_MAIN);
   etx_obj_add_style(obj, styles->pad_textarea, LV_PART_MAIN);
+
+  // PA01: modern flat field instead of the stock outlined pill (no-op else).
+  etx_field_style(obj, LV_PART_MAIN);
 
   etx_bg_color(obj, COLOR_THEME_EDIT_INDEX, LV_PART_MAIN | LV_STATE_EDITED);
   etx_txt_color(obj, COLOR_THEME_PRIMARY2_INDEX,

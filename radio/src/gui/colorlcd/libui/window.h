@@ -22,6 +22,7 @@
 #include <list>
 #include <string>
 
+#include "bitmaps.h"
 #include "definitions.h"
 #include "edgetx_helpers.h"
 #include "etx_lv_theme.h"
@@ -263,6 +264,9 @@ struct PageButtonDef {
   std::function<void()> createPage;
   std::function<bool()> isActive;
   std::function<bool()> enabled;
+  // Optional icon shown above the label. EDGETX_ICONS_COUNT = text-only.
+  // Default member keeps all existing aggregate initializers source-compatible.
+  EdgeTxIcon icon = EDGETX_ICONS_COUNT;
 };
 
 //-----------------------------------------------------------------------------

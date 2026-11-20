@@ -228,8 +228,13 @@ class ValueWidget : public Widget
     mixsrc_t field = widgetData->options[0].value.unsignedValue;
 
     // get color from options[1]
-    etx_txt_color_from_flags(label, widgetData->options[1].value.unsignedValue);
-    etx_txt_color_from_flags(value, widgetData->options[1].value.unsignedValue);
+    LcdFlags color = widgetData->options[1].value.unsignedValue;
+#if defined(PCBPA01)
+    // Models store colours picked for the stock light background.
+    color = pa01ReadableColor(color, COLOR_THEME_PRIMARY1_INDEX);
+#endif
+    etx_txt_color_from_flags(label, color);
+    etx_txt_color_from_flags(value, color);
 
     // get label alignment from options[3]
     LcdFlags lblAlign = widgetData->options[3].value.unsignedValue;
@@ -288,7 +293,8 @@ class ValueWidget : public Widget
 
 const WidgetOption ValueWidget::options[] = {
     {STR_SOURCE, WidgetOption::Source, MIXSRC_FIRST_STICK},
-    {STR_COLOR, WidgetOption::Color, COLOR2FLAGS(COLOR_THEME_PRIMARY2_INDEX)},
+    {STR_COLOR, WidgetOption::Color,
+     COLOR2FLAGS(COLOR_THEME_ON_DARK_INDEX)},
     {STR_SHADOW, WidgetOption::Bool, false},
     {STR_ALIGN_LABEL, WidgetOption::Align, ALIGN_LEFT},
     {STR_ALIGN_VALUE, WidgetOption::Align, ALIGN_LEFT},

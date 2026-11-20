@@ -34,8 +34,15 @@
 
 #include "chksize.h"
 
-#define CHKSIZE(x, y) check_size<struct x, y>()
-#define CHKTYPE(x, y) check_size<x, y>()
+#if defined(SIMU)
+  // Host (x86_64) ABI differs from target ARM ABI (bitfields/pointers/packing),
+  // so target struct sizes cannot be asserted here. Skip for native simulator.
+  #define CHKSIZE(x, y)
+  #define CHKTYPE(x, y)
+#else
+  #define CHKSIZE(x, y) check_size<struct x, y>()
+  #define CHKTYPE(x, y) check_size<x, y>()
+#endif
 
 static inline void check_struct()
 {

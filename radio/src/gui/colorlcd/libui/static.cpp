@@ -183,6 +183,25 @@ StaticIcon::StaticIcon(Window* parent, coord_t x, coord_t y, const char* filenam
   });
 }
 
+StaticIcon::StaticIcon(Window* parent, coord_t x, coord_t y, const MaskBitmap* bitmap,
+                       LcdColorIndex color) :
+    Window(parent, rect_t{x, y, 0, 0}, lv_canvas_create),
+    currentColor(color)
+{
+  setWindowFlag(NO_FOCUS | NO_CLICK);
+
+  if (bitmap) {
+    // Not owned by this widget: the buffer outlives it (see the setup card icon
+    // cache). currentIcon stays EDGETX_ICONS_COUNT so setIcon() still works.
+    mask = const_cast<MaskBitmap*>(bitmap);
+    setSize(bitmap->width, bitmap->height);
+    lv_canvas_set_buffer(lvobj, (void*)bitmap->data, bitmap->width, bitmap->height,
+                         LV_IMG_CF_ALPHA_8BIT);
+  }
+
+  etx_img_color(lvobj, currentColor, LV_PART_MAIN);
+}
+
 void StaticIcon::setColor(LcdColorIndex color)
 {
   if (currentColor != color) {

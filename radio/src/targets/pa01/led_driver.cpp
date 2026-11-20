@@ -25,6 +25,7 @@
 
 #include "boards/generic_stm32/rgb_leds.h"
 #include "board.h"
+#include "led_scene.h"
 
 #define GET_RED(color) (((color) & 0xF80000) >>16)
 #define GET_GREEN(color) (((color) & 0x000F800) >> 8)
@@ -40,6 +41,9 @@ uint8_t fsLedFirstIndex(uint8_t index)
 
 void fsLedRGB(uint8_t index, uint32_t color)
 {
+  // 场景引擎接管时，功能开关灯由 led_scene 负责
+  if (ledSceneEnabled()) return;
+
   rgbSetLedColor(fsLedFirstIndex(index), GET_RED(color),
      GET_GREEN(color),GET_BLUE(color));
   rgbSetLedColor(fsLedFirstIndex(index)+1, GET_RED(color),
@@ -54,30 +58,31 @@ void ledOff()
   rgbLedColorApply();
 }
 
+// PA01 power-key LED (indices 8/9) is fixed to a deeper pink (R:G:B = 20:6:13),
+// independent of the status phase selected by checkStatusLed().
+static void ledPowerPink()
+{
+  rgbSetLedColor(8, 20, 6, 13);
+  rgbSetLedColor(9, 20, 6, 13);
+  rgbLedColorApply();
+}
+
 void ledRed()
 {
-  rgbSetLedColor(8, 20, 0, 0);
-  rgbSetLedColor(9, 20, 0, 0);
-  rgbLedColorApply();
+  ledPowerPink();
 }
 
 void ledGreen()
 {
-  rgbSetLedColor(8, 0, 20, 0);
-  rgbSetLedColor(9, 0, 20, 0);
-  rgbLedColorApply();
+  ledPowerPink();
 }
 
 void ledBlue()
 {
-  rgbSetLedColor(8, 0, 0, 20);
-  rgbSetLedColor(9, 0, 0, 20);
-  rgbLedColorApply();
+  ledPowerPink();
 }
 
 void ledBoot()
 {
-  rgbSetLedColor(8, 20, 20, 20);
-  rgbSetLedColor(9, 20, 20, 20);
-  rgbLedColorApply();
+  ledPowerPink();
 }

@@ -48,7 +48,7 @@ class MixLineButton : public InputMixButtonBase
   void delayedInit() override
   {
     // Add multiplex icon
-    mplex = new StaticIcon(this, 0, 0, ICON_MPLEX_ADD, COLOR_THEME_SECONDARY1_INDEX);
+    mplex = new StaticIcon(this, 0, 0, ICON_MPLEX_ADD, COLOR_THEME_SECONDARY_FG_INDEX);
     // Position multiplex icon to the left of the parent mix line
     mplex->setPos(-mplex->width() - PAD_MEDIUM, PAD_SMALL);
 

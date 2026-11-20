@@ -32,6 +32,11 @@
 #include "io/frsky_firmware_update.h"
 #include "hal/adc_driver.h"
 #include "hal/switch_driver.h"
+
+#if defined(PCBPA01)
+bool ledSceneTick();
+void ledSceneUiTick();
+#endif
 #include "hal/storage.h"
 #include "hal/watchdog_driver.h"
 #include "hal/abnormal_reboot.h"
@@ -214,6 +219,10 @@ void per10ms()
 #endif
 
   uint8_t keyActivity = keysPollingCycle();
+#if defined(PCBPA01)
+  // 场景引擎的正常运行驱动（充电界面之外的唯一周期入口）
+  ledSceneUiTick();
+#endif
   if (keyActivity & KEY_ACTIVITY_KEYS) {
     inactivityTimerReset(ActivitySource::Keys);
   }

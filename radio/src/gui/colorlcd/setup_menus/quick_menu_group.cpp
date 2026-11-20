@@ -35,7 +35,13 @@ static void etx_quick_button_constructor(const lv_obj_class_t* class_p,
   etx_obj_add_style(obj, styles->pad_zero, LV_PART_MAIN);
   etx_solid_bg(obj, COLOR_THEME_QM_BG_INDEX, LV_PART_MAIN);
 
+#if defined(PCBPA01)
+  // Focus is the accent colour on this radio: pink fill with the dark glyph
+  // (the icon/label switch to QM_BG while focused) instead of a white slab.
+  etx_solid_bg(obj, COLOR_THEME_FOCUS_INDEX, LV_PART_MAIN | LV_STATE_FOCUSED);
+#else
   etx_solid_bg(obj, COLOR_THEME_QM_FG_INDEX, LV_PART_MAIN | LV_STATE_FOCUSED);
+#endif
 }
 
 static const lv_obj_class_t etx_quick_button_class = {

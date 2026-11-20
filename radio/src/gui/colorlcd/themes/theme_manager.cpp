@@ -501,8 +501,35 @@ void ThemePersistance::insertDefaultTheme()
 }
 
 HeaderDateTime::HeaderDateTime(Window* parent, coord_t x, coord_t y) :
-  Window(parent, {x, y, HDR_DATE_WIDTH, HDR_DATE_LINE2 + HDR_DATE_HEIGHT + 2})
+  Window(parent, {x, y,
+#if defined(PCBPA01)
+                  HDR_DATE_WIDTH_PA01,
+#else
+                  HDR_DATE_WIDTH,
+#endif
+                  HDR_DATE_LINE2 + HDR_DATE_HEIGHT + 2})
 {
+#if defined(PCBPA01)
+  // Date acts as a caption, clock as the reading: 10px over 17px. The block is
+  // top-aligned with the status cluster in the header, so the two rows keep the
+  // same top gap as the bars and the battery.
+  //
+  // Both labels are left to size themselves and anchored to the right edge.
+  // Giving them a fixed width clipped the last digit of "11-19" and "12:19".
+  date = etx_label_create(lvobj, FONT_XXS_INDEX);
+  lv_obj_set_style_text_align(date, LV_TEXT_ALIGN_RIGHT, LV_PART_MAIN);
+  etx_txt_color(date, COLOR_THEME_SECONDARY2_INDEX);
+  lv_obj_align(date, LV_ALIGN_TOP_RIGHT, -HDR_DATE_MARGIN_PA01, 0);
+
+  // Second line is the header's main reading, two type steps above the date.
+  // Its top is pinned by the date's line height, so growing the font pushes the
+  // clock downwards only - the date's top gap to the header stays put.
+  time = etx_label_create(lvobj, FONT_STD_INDEX);
+  lv_obj_set_style_text_align(time, LV_TEXT_ALIGN_RIGHT, LV_PART_MAIN);
+  etx_txt_color(time, COLOR_THEME_PRIMARY1_INDEX);
+  lv_obj_align(time, LV_ALIGN_TOP_RIGHT, -HDR_DATE_MARGIN_PA01,
+               HDR_DATE_H_PA01);
+#else
   date = etx_label_create(lvobj, FONT_XS_INDEX);
   lv_obj_set_pos(date, 0, 0);
   lv_obj_set_size(date, HDR_DATE_WIDTH, HDR_DATE_HEIGHT);
@@ -514,6 +541,7 @@ HeaderDateTime::HeaderDateTime(Window* parent, coord_t x, coord_t y) :
   lv_obj_set_size(time, HDR_DATE_WIDTH, HDR_DATE_HEIGHT);
   lv_obj_set_style_text_align(time, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN);
   etx_txt_color(time, COLOR_THEME_PRIMARY2_INDEX);
+#endif
 
   setWindowFlag(NO_CLICK);
 
@@ -535,9 +563,18 @@ void HeaderDateTime::checkEvents()
     sprintf(str, "%d %s", t.tm_mday, STR_MONTHS[t.tm_mon]);
 #endif
     lv_label_set_text(date, str);
+#if defined(PCBPA01)
+    // Re-anchor after every text change: the labels size themselves, so the
+    // offset computed at construction is stale as soon as the digits change.
+    lv_obj_align(date, LV_ALIGN_TOP_RIGHT, -HDR_DATE_MARGIN_PA01, 0);
+#endif
 
     getTimerString(str, getValue(MIXSRC_TX_TIME), timerOptions);
     lv_label_set_text(time, str);
+#if defined(PCBPA01)
+    lv_obj_align(time, LV_ALIGN_TOP_RIGHT, -HDR_DATE_MARGIN_PA01,
+                 HDR_DATE_H_PA01);
+#endif
 
     lastTime = t;
   }
@@ -545,15 +582,32 @@ void HeaderDateTime::checkEvents()
 
 void HeaderDateTime::setColor(LcdFlags color)
 {
+#if defined(PCBPA01)
+  // Only the clock follows the model's colour option; the date stays a caption.
+  etx_txt_color_from_flags(time, color);
+#else
   etx_txt_color_from_flags(date, color);
   etx_txt_color_from_flags(time, color);
+#endif
 }
 
+// PA01 uses a dark palette where PRIMARY2 is a surface colour, so the original
+// (blue plate + white glyph) combination would render as a pink plate with a
+// near-black glyph. Keep the header flat like the Quick Menu header instead and
+// leave the pink accent for focus/active states.
+#if defined(PCBPA01)
+  #define HDR_ICON_PLATE COLOR_THEME_PRIMARY3_INDEX
+  #define HDR_ICON_FG    COLOR_THEME_PRIMARY1_INDEX
+#else
+  #define HDR_ICON_PLATE COLOR_THEME_FOCUS_INDEX
+  #define HDR_ICON_FG    COLOR_THEME_PRIMARY2_INDEX
+#endif
+
 HeaderIcon::HeaderIcon(Window* parent, EdgeTxIcon icon, std::function<void()> action) :
-  StaticIcon(parent, 0, 0, ICON_TOPLEFT_BG, COLOR_THEME_FOCUS_INDEX),
+  StaticIcon(parent, 0, 0, ICON_TOPLEFT_BG, HDR_ICON_PLATE),
   action(std::move(action))
 {
-  this->icon = new StaticIcon(this, 0, 0, icon, COLOR_THEME_PRIMARY2_INDEX);
+  this->icon = new StaticIcon(this, 0, 0, icon, HDR_ICON_FG);
   this->icon->center(width() - PAD_SMALL, height());
 #if defined(HARDWARE_TOUCH)
   if (this->action) {
@@ -564,10 +618,10 @@ HeaderIcon::HeaderIcon(Window* parent, EdgeTxIcon icon, std::function<void()> ac
 }
 
 HeaderIcon::HeaderIcon(Window* parent, const char* iconFile, std::function<void()> action) :
-  StaticIcon(parent, 0, 0, ICON_TOPLEFT_BG, COLOR_THEME_FOCUS_INDEX),
+  StaticIcon(parent, 0, 0, ICON_TOPLEFT_BG, HDR_ICON_PLATE),
   action(std::move(action))
 {
-  this->icon = new StaticIcon(this, 0, 0, iconFile, COLOR_THEME_PRIMARY2_INDEX);
+  this->icon = new StaticIcon(this, 0, 0, iconFile, HDR_ICON_FG);
   this->icon->center(width(), height());
 #if defined(HARDWARE_TOUCH)
   if (this->action) {
@@ -578,10 +632,10 @@ HeaderIcon::HeaderIcon(Window* parent, const char* iconFile, std::function<void(
 }
 
 HeaderBackIcon::HeaderBackIcon(Window* parent, std::function<void()> action) :
-  StaticIcon(parent, LCD_W - PageGroup::PAGE_GROUP_BACK_BTN_XO, 0, ICON_TOPRIGHT_BG, COLOR_THEME_FOCUS_INDEX),
+  StaticIcon(parent, LCD_W - PageGroup::PAGE_GROUP_BACK_BTN_XO, 0, ICON_TOPRIGHT_BG, HDR_ICON_PLATE),
   action(std::move(action))
 {
-  (new StaticIcon(this, 0, 0, ICON_BTN_CLOSE, COLOR_THEME_PRIMARY2_INDEX))->center(width() + PAD_MEDIUM, height());
+  (new StaticIcon(this, 0, 0, ICON_BTN_CLOSE, HDR_ICON_FG))->center(width() + PAD_MEDIUM, height());
 #if defined(HARDWARE_TOUCH)
   if (this->action) {
     setWindowFlag(NO_CLICK);
@@ -589,3 +643,6 @@ HeaderBackIcon::HeaderBackIcon(Window* parent, std::function<void()> action) :
   }
 #endif
 }
+
+#undef HDR_ICON_PLATE
+#undef HDR_ICON_FG

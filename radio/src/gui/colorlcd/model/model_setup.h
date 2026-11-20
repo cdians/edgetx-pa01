@@ -32,7 +32,13 @@ class ModelSetupPage: public PageGroupItem {
   void build(Window * window) override;
 
   static LAYOUT_SIZE(BTN_COLS, 3, 3)
+  // PA01: same icon-over-caption card as the Radio settings grid, so both
+  // setup screens share one visual language.
+#if defined(PCBPA01)
+  static LAYOUT_VAL_SCALED(BTN_H, 105)
+#else
   static LAYOUT_VAL_SCALED(BTN_H, 62)
+#endif
   static LAYOUT_VAL_SCALED(OPTS_W, 100)
   static LAYOUT_SIZE_SCALED(NAM_W, 200, 140)
 };

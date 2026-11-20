@@ -76,7 +76,9 @@ class ViewMain : public NavWindow
   bool isVisible = true;
   lv_obj_t* tile_view = nullptr;
   TopBar* topbar = nullptr;
-  HeaderIcon* headerIcon = nullptr;
+  // On PA01 this points at MainViewBrand instead of a HeaderIcon; both are
+  // Windows, and only show()/top()/setTop() are used here.
+  Window* headerIcon = nullptr;
   bool widget_select = false;
   tmr10ms_t widgetSelectCancelTime = 0;
 

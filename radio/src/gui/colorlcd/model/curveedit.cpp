@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (C) EdgeTX
  *
  * Based on code named
@@ -191,7 +191,7 @@ class CurveDataEdit : public Window
             parent,
             {PTNUM_X + (i * (NUM_BTN_WIDTH + PAD_TINY)), y + PAD_MEDIUM,
              NUM_BTN_WIDTH, EdgeTxStyles::UI_ELEMENT_HEIGHT},
-            "-100", COLOR_THEME_SECONDARY1_INDEX, CENTERED);
+            "-100", COLOR_THEME_SECONDARY_FG_INDEX, CENTERED);
         i += 1;
       }
       if ((start + count) == curvePointsCount) {
@@ -226,7 +226,7 @@ class CurveDataEdit : public Window
             parent,
             {PTNUM_X + (i * (NUM_BTN_WIDTH + PAD_TINY)), y + PAD_MEDIUM,
              NUM_BTN_WIDTH, EdgeTxStyles::UI_ELEMENT_HEIGHT},
-            "100", COLOR_THEME_SECONDARY1_INDEX, CENTERED);
+            "100", COLOR_THEME_SECONDARY_FG_INDEX, CENTERED);
       }
     } else {
       for (uint8_t i = 0; i < count; i++) {
@@ -235,7 +235,7 @@ class CurveDataEdit : public Window
             rect_t{PTNUM_X + (i * (NUM_BTN_WIDTH + PAD_TINY)), y + PAD_MEDIUM,
                    NUM_BTN_WIDTH, EdgeTxStyles::UI_ELEMENT_HEIGHT},
             std::to_string(-100 + (200 * (i + start)) / (curvePointsCount - 1)),
-            COLOR_THEME_SECONDARY1_INDEX, CENTERED);
+            COLOR_THEME_SECONDARY_FG_INDEX, CENTERED);
       }
     }
 

@@ -172,6 +172,17 @@ class HeaderDateTime : public Window
   static LAYOUT_VAL_SCALED(HDR_DATE_HEIGHT, 12)
   static LAYOUT_VAL_SCALED(HDR_DATE_LINE2, 15)
 
+#if defined(PCBPA01)
+  // The PA01 clock is a bigger type step than the shared one, so it needs a
+  // wider box; both the label width and the right-hand anchor use this value.
+  static constexpr coord_t HDR_DATE_WIDTH_PA01 = 42;
+  static constexpr coord_t HDR_DATE_H_PA01 = 10;
+  static constexpr coord_t HDR_TIME_H_PA01 = 17;
+  // Breathing room from the screen edge, as in the design (the clock stops
+  // short of the bezel rather than running into it).
+  static constexpr coord_t HDR_DATE_MARGIN_PA01 = 6;
+#endif
+
  protected:
   lv_obj_t *date = nullptr;
   lv_obj_t *time = nullptr;
