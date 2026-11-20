@@ -119,6 +119,7 @@ local colorEdit = false
 local colorSlot = 1       -- 当前编辑的颜色组 1/2
 local colorBackup = { 255, 255, 255 }
 local savedTip = 0
+local dirty = false
 
 -- ---------------------------------------------------------------- 配置
 
@@ -348,6 +349,8 @@ local function drawList()
   if listCursor == #SCENES + 2 then lcd.drawRectangle(163, 211, 150, 24, C.txt) end
   if savedTip > 0 then
     lcd.drawText(W / 2, 200, "已保存", C.acc + CENTER + SMLSIZE)
+  elseif dirty then
+    lcd.drawText(COL2, 200, "未保存", C.acc + RIGHT + SMLSIZE)
   end
 end
 
@@ -574,6 +577,7 @@ local function runEdit(event)
       else
         s.bright = clamp(s.bright + 5 * d, 5, 100)
       end
+      dirty = true
     end
     return
   end
@@ -586,6 +590,7 @@ local function runEdit(event)
     if it.t == "fx" then
       s.fx = it.id
       if colorSlots(s) < 2 then colorSlot = 1 end
+      dirty = true
     elseif it.t == "trig" or it.t == "speed" or it.t == "bright" then
       editMode = true
     elseif it.t == "slot" then
@@ -593,6 +598,7 @@ local function runEdit(event)
     elseif it.t == "preset" then
       local p = PRESETS[it.v]
       setColor(s, colorSlot, p[1], p[2], p[3])
+      dirty = true
     elseif it.t == "custom" then
       screen = 3
       colorCursor = 1
@@ -601,11 +607,13 @@ local function runEdit(event)
       colorBackup = { cr, cg, cb }
     elseif it.t == "on" then
       s.on = not s.on
+      dirty = true
     elseif it.t == "default" then
       restoreDefault(sceneIdx)
       if colorSlots(s) < 2 then colorSlot = 1 end
+      dirty = true
     elseif it.t == "save" then
-      if saveCfg() then savedTip = 40 end
+      if saveCfg() then savedTip = 40; dirty = false end
     end
   elseif event == EVT_VIRTUAL_EXIT then
     if editMode then
@@ -636,6 +644,7 @@ local function runColor(event)
       elseif ch == 2 then cg = clamp(cg + d, 0, 255)
       else cb = clamp(cb + d, 0, 255) end
       setColor(s, colorSlot, cr, cg, cb)
+      dirty = true
     end
     return
   end
@@ -648,6 +657,7 @@ local function runColor(event)
     if colorCursor <= 8 then
       local p = COLOR_PRESETS[colorCursor]
       setColor(s, colorSlot, p[1], p[2], p[3])
+      dirty = true
     elseif colorCursor <= 11 then
       colorEdit = true
     elseif colorCursor == 12 then
@@ -677,7 +687,13 @@ local function run(event)
   if savedTip > 0 then savedTip = savedTip - 1 end
 
   if screen == 1 then
-    if event == EVT_VIRTUAL_EXIT then return 2 end
+    if event == EVT_VIRTUAL_EXIT then
+      -- 有改动就先落盘，避免退出后固件仍读旧配置
+      if dirty then
+        if saveCfg() then dirty = false end
+      end
+      return 2
+    end
     local n = #SCENES + 2
     if event == EVT_VIRTUAL_NEXT then
       listCursor = listCursor % n + 1
