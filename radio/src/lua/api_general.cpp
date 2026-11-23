@@ -3033,6 +3033,8 @@ Set the color of a LED, the change is visible after applyRGBLedColors()
   others). Scripts that only want the decorative LEDs, and still run on older
   firmware, can loop to `(BLING_LED_STRIP_LENGTH or LED_STRIP_LENGTH) - 1`.
   See getRGBLedInfo() for how the LEDs are grouped.
+  On PA01 the index is the physical LED position (0 to LED_STRIP_LENGTH - 1),
+  matching the on-board scene engine and the ledfx.lua preview.
 
 @param rvalue: integer, value of red channel
 
@@ -3050,6 +3052,24 @@ static int luaSetRgbLedColor(lua_State * L)
 {
   uint8_t id = luaL_checkunsigned(L, 1);
 
+#if defined(PCBPA01)
+  // PA01's RGB chain is addressed by physical index end-to-end: the scene
+  // engine (led_scene.cpp::render) writes rgbSetLedColor(hw, ...) with hw in
+  // 0..LEDFX_LEDS-1, and ledfx.lua previews with the same physical indices.
+  // Expose them directly instead of the generic logical->physical remap,
+  // which otherwise skips the power-key pair (8/9) and rejects 12/13.
+  if (id >= LED_STRIP_LENGTH) {
+    lua_pushboolean(L, false);
+    return 1;
+  }
+
+  uint8_t r = luaL_checkunsigned(L, 2);
+  uint8_t g = luaL_checkunsigned(L, 3);
+  uint8_t b = luaL_checkunsigned(L, 4);
+  rgbSetLedColor(id, r, g, b);
+  lua_pushboolean(L, true);
+  return 1;
+#else
   if (id >= (BLING_LED_STRIP_LENGTH + CFS_LED_STRIP_LENGTH)) {
     lua_pushboolean(L, false);
     return 1;
@@ -3082,6 +3102,7 @@ static int luaSetRgbLedColor(lua_State * L)
 
   lua_pushboolean(L, true);
   return 1;
+#endif
 }
 #endif
 
@@ -3198,7 +3219,11 @@ Describe the LEDs that setRGBLedColor() can address
 static int luaGetRGBLedInfo(lua_State * L)
 {
   lua_newtable(L);
+#if defined(PCBPA01)
+  lua_pushtableinteger(L, "length", LED_STRIP_LENGTH);
+#else
   lua_pushtableinteger(L, "length", BLING_LED_STRIP_LENGTH + CFS_LED_STRIP_LENGTH);
+#endif
   lua_pushtableinteger(L, "bling", BLING_LED_STRIP_LENGTH);
 
 #if CFS_LED_STRIP_LENGTH > 0
@@ -3558,7 +3583,14 @@ LROT_BEGIN(etxcst, NULL, 0)
   LROT_NUMENTRY( PLAY_BACKGROUND, PLAY_BACKGROUND )
   LROT_NUMENTRY( TIMEHOUR, TIMEHOUR )
 #if (BLING_LED_STRIP_LENGTH > 0) || (CFS_LED_STRIP_LENGTH > 0)
+#if defined(PCBPA01)
+  // PA01: setRGBLedColor() takes physical indices 0..LED_STRIP_LENGTH-1, so
+  // expose the full 14-LED strip here too. Otherwise this global = bling + CFS
+  // (12) and the RGBLED demo scripts stop one LED short of the power-key pair.
+  LROT_NUMENTRY( LED_STRIP_LENGTH, LED_STRIP_LENGTH )
+#else
   LROT_NUMENTRY( LED_STRIP_LENGTH, BLING_LED_STRIP_LENGTH + CFS_LED_STRIP_LENGTH )
+#endif
   LROT_NUMENTRY( BLING_LED_STRIP_LENGTH, BLING_LED_STRIP_LENGTH )
 #endif
   LROT_NUMENTRY( UNIT_RAW, UNIT_RAW )

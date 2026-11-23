@@ -1,11 +1,13 @@
 -- TNS|LED 灯效|TNE
 -- PA01 LED 场景灯效工具
+-- 作者: cdian
 -- 写入 /RADIO/ledfx.cfg，固件开机时读取并自行渲染
 
 local W, H = LCD_W, LCD_H
 local COL1, COL2 = 8, W - 8
 local CFG_PATH = "/RADIO/ledfx.cfg"
 local NLED = 14
+local WATERMARK = "by cdian"   -- 作者水印（低调显示，不遮挡操作区）
 
 local C = {
   bg    = lcd.RGB(18, 21, 27),
@@ -13,6 +15,7 @@ local C = {
   hi    = lcd.RGB(52, 60, 76),
   txt   = lcd.RGB(232, 236, 242),
   muted = lcd.RGB(122, 130, 150),
+  wm    = lcd.RGB(70, 78, 92),   -- 水印用更暗的颜色，避免喧宾夺主
   acc   = lcd.RGB(255, 95, 162),
   bar   = lcd.RGB(28, 33, 43),
 }
@@ -20,8 +23,8 @@ local C = {
 -- 效果：0 关闭 1 静态 2 脉动 3 光谱 4 流动 5 循环 6 警灯 7 油门条(旧) 8 星点 9 交替 10 光谱脉动
 local FX_NAME = { "关闭", "静态", "脉动", "光谱", "流动", "循环", "警灯", "油门条",
                   "星点", "交替", "光谱脉动" }
--- 网格里可选的效果：油门条已移到「油门」事件，不再列出
-local FX_LIST = { 1, 2, 3, 4, 5, 6, 8, 9, 10 }
+-- 网格里可选的效果：油门条随油门实时变化，用「曲线」参数校正感知
+local FX_LIST = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 }
 -- 电源键（灯 8-9）只支持 静态 / 脉动
 local PW_FX = { 1, 2 }
 -- 各效果用到的颜色组数量（索引 = fx + 1）
@@ -60,6 +63,7 @@ SCENES[5].r2, SCENES[5].g2, SCENES[5].b2 = 40, 70, 210
 SCENES[8].r2, SCENES[8].g2, SCENES[8].b2 = 60, 90, 255
 for _, s in ipairs(SCENES) do
   if not s.r2 then s.r2, s.g2, s.b2 = s.r, s.g, s.b end
+  if not s.gamma then s.gamma = 2.2 end   -- 呼吸曲线指数：1=线性 2.2=感知匀速 3.5=暗段更长
 end
 
 local function hasTrig(s)
@@ -99,14 +103,14 @@ local function snapshotDefaults()
     DEFAULTS[i] = { fx = s.fx, speed = s.speed, bright = s.bright,
                     r = s.r, g = s.g, b = s.b,
                     r2 = s.r2, g2 = s.g2, b2 = s.b2,
-                    on = s.on, trig = s.trig }
+                    gamma = s.gamma, on = s.on, trig = s.trig }
   end
 end
 local function restoreDefault(i)
   local d, s = DEFAULTS[i], SCENES[i]
   if not d or not s then return end
-  s.fx, s.speed, s.bright, s.r, s.g, s.b, s.r2, s.g2, s.b2, s.on, s.trig =
-    d.fx, d.speed, d.bright, d.r, d.g, d.b, d.r2, d.g2, d.b2, d.on, d.trig
+  s.fx, s.speed, s.bright, s.r, s.g, s.b, s.r2, s.g2, s.b2, s.gamma, s.on, s.trig =
+    d.fx, d.speed, d.bright, d.r, d.g, d.b, d.r2, d.g2, d.b2, d.gamma, d.on, d.trig
 end
 
 local screen = 1       -- 1 列表 / 2 编辑 / 3 颜色
@@ -151,8 +155,8 @@ local function parseLine(line)
     else
       s.r2, s.g2, s.b2 = s.r, s.g, s.b
     end
-    -- 油门条已并入「油门」事件，旧配置回落到静态
-    if s.fx == 7 then s.fx = 1 end
+    -- 第 12 列：呼吸曲线指数 ×10（22 = 2.2）；旧配置缺省回落到 2.2
+    s.gamma = (#v >= 12) and (v[12] / 10) or 2.2
     -- 「关闭」效果已移除，统一用「启用」开关控制
     if s.fx == 0 then s.fx = 1 end
   end
@@ -172,9 +176,10 @@ local function saveCfg()
   if not f then return false end
   io.write(f, string.format("global=%d,%d,%d\n", gEventDur, gMask, gEnabled and 1 or 0))
   for _, s in ipairs(SCENES) do
-    io.write(f, string.format("%s=%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n", s.key,
+    io.write(f, string.format("%s=%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n", s.key,
       s.fx, s.speed, s.bright, s.r, s.g, s.b, s.on and 1 or 0, s.trig or 0,
-      s.r2 or s.r, s.g2 or s.g, s.b2 or s.b))
+      s.r2 or s.r, s.g2 or s.g, s.b2 or s.b,
+      math.floor((s.gamma or 2.2) * 10 + 0.5)))
   end
   io.close(f)
   return true
@@ -207,6 +212,16 @@ end
 -- 速度档位 → 倍率（低档更慢）
 local SPD = { 0.4, 0.55, 0.75, 1.0, 1.35, 1.8, 2.4, 3.2, 4.2, 5.5, 7.0 }
 
+-- 油门位置归一化 0..1（摇杆 thr 范围 -1024..1024）
+local function throttleUnit()
+  if not getValue then return 0 end
+  local v = getValue('thr')
+  if type(v) ~= "number" then return 0 end
+  local u = (v + 1024) / 2048
+  if u < 0 then u = 0 elseif u > 1 then u = 1 end
+  return u
+end
+
 local function fxColor(s, i, t)
   local sp = SPD[(s.speed or 0) + 1] or 1
   local power = (i == 8 or i == 9)
@@ -222,7 +237,8 @@ local function fxColor(s, i, t)
     local period = 3600 / sp
     local half = period / 2
     local p = t % period
-    local k = (p < half) and (p * 255 / half) or ((period - p) * 255 / half)
+    local u = (p < half) and (p / half) or ((period - p) / half)
+    local k = 255 * (u ^ (s.gamma or 2.2))   -- 幂曲线：拉长暗段，感知匀速
     r, g, b = a1 * k / 255, a2 * k / 255, a3 * k / 255
   elseif s.fx == 3 then
     r, g, b = hsv2rgb(math.floor(t * sp / 12) % 360, 255, 255)
@@ -237,6 +253,10 @@ local function fxColor(s, i, t)
     local odd = idx % 2
     if (ph == 1) ~= (odd == 1) then r, g, b = a1, a2, a3
     else r, g, b = b1, b2, b3 end
+  elseif s.fx == 7 then   -- 油门条：亮度跟随油门，用曲线校正感知
+    local u = throttleUnit()
+    local k = u ^ (s.gamma or 2.2)
+    r, g, b = a1 * k, a2 * k, a3 * k
   elseif s.fx == 8 then   -- 星点：色1 底色，色2 星点
     r, g, b = a1, a2, a3
     local d1 = (t * 0.072 * sp) % 360
@@ -255,7 +275,8 @@ local function fxColor(s, i, t)
     local period = 3600 / sp
     local half = period / 2
     local p = t % period
-    local k2 = (p < half) and (p * 255 / half) or ((period - p) * 255 / half)
+    local u = (p < half) and (p / half) or ((period - p) / half)
+    local k2 = 255 * (u ^ (s.gamma or 2.2))
     local rr, gg, bb = hsv2rgb(math.floor(t * sp / 12) % 360, 255, 255)
     r, g, b = rr * k2 / 255, gg * k2 / 255, bb * k2 / 255
   end
@@ -290,6 +311,7 @@ end
 local function headerText(left, right)
   lcd.drawFilledRectangle(0, 0, W, 20, C.bar)
   lcd.drawText(COL1, 2, left, C.txt + BOLD)
+  lcd.drawText(W / 2, 6, WATERMARK, C.wm + CENTER + SMLSIZE)
   if right then
     lcd.drawText(COL2, 4, right, C.muted + RIGHT + SMLSIZE)
   end
@@ -363,6 +385,8 @@ local function editRows(s)
   for k = 1, #fxList do items[#items + 1] = { t = "fx", id = fxList[k] } end
   if hasTrig(s) then items[#items + 1] = { t = "trig" } end
   items[#items + 1] = { t = "speed" }
+  -- 亮度做连续映射的效果才显示曲线调节：脉动 / 光谱脉动 / 油门条
+  if s.fx == 2 or s.fx == 7 or s.fx == 10 then items[#items + 1] = { t = "gamma" } end
   items[#items + 1] = { t = "bright" }
   if slots == 2 then items[#items + 1] = { t = "slot" } end
   if slots >= 1 then
@@ -375,6 +399,7 @@ local function editRows(s)
   for i, it in ipairs(items) do
     if it.t == "trig" then R.trig = i
     elseif it.t == "speed" then R.speed = i
+    elseif it.t == "gamma" then R.gamma = i
     elseif it.t == "bright" then R.bright = i
     elseif it.t == "slot" then R.slot = i
     elseif it.t == "preset" and not R.preset then R.preset = i
@@ -429,8 +454,8 @@ local function drawEdit()
     lcd.drawText(cx + 6, cy + 12, trigName(s) .. " >", C.txt + SMLSIZE)
   end
 
-  -- 参数
-  local y = 142
+  -- 参数（曲线仅呼吸类显示，行距压紧以容纳第三行）
+  local py = 138
   local function paramRow(idx, name, val, maxv, yy)
     lcd.drawText(16, yy + 2, name, C.muted + SMLSIZE)
     lcd.drawFilledRectangle(52, yy + 5, 96, 6, C.card)
@@ -438,11 +463,12 @@ local function drawEdit()
     lcd.drawText(154, yy + 1, tostring(val), C.txt + SMLSIZE)
     if cursor == idx then lcd.drawRectangle(14, yy, 148, 14, C.acc) end
   end
-  paramRow(R.speed, "速度", s.speed, 10, y)
-  paramRow(R.bright, "亮度", s.bright, 100, y + 16)
+  paramRow(R.speed, "速度", s.speed, 10, py); py = py + 14
+  if R.gamma then paramRow(R.gamma, "曲线", s.gamma, 3.5, py); py = py + 14 end
+  paramRow(R.bright, "亮度", s.bright, 100, py)
 
   -- 颜色
-  local cy2 = 176
+  local cy2 = 182
   if R.slots == 0 then
     -- 自动配色效果：用动态色带示意
     lcd.drawText(16, cy2 + 2, "自动配色", C.muted + SMLSIZE)
@@ -492,9 +518,9 @@ local function drawEdit()
   if cursor == R.save then lcd.drawRectangle(215, 211, 98, 24, C.txt) end
 
   if savedTip > 0 then
-    lcd.drawText(W / 2, 196, "已保存", C.acc + CENTER + SMLSIZE)
+    lcd.drawText(W / 2, 200, "已保存", C.acc + CENTER + SMLSIZE)
   elseif editMode then
-    lcd.drawText(W / 2, 196, "滚轮调整 · ENTER 完成", C.muted + CENTER + SMLSIZE)
+    lcd.drawText(W / 2, 200, "滚轮调整 · ENTER 完成", C.muted + CENTER + SMLSIZE)
   end
 end
 
@@ -574,6 +600,8 @@ local function runEdit(event)
         s.trig = clamp((s.trig or 30) + 5 * d, 5, 100)
       elseif it.t == "speed" then
         s.speed = clamp(s.speed + d, 0, 10)
+      elseif it.t == "gamma" then
+        s.gamma = clamp(math.floor(((s.gamma or 2.2) + 0.1 * d) * 10 + 0.5) / 10, 1.0, 3.5)
       else
         s.bright = clamp(s.bright + 5 * d, 5, 100)
       end

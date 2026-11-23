@@ -767,6 +767,10 @@ void handle_battery_charge(uint32_t pressTime)
 #define CHARGING_BRIGHT  20
 
 void rgbPowerOn(uint8_t color) {
+  // 若上次运行时 Lua 保存过 boot 配置，直接用它替换固化在代码里的默认开机灯效。
+  // 没有有效配置时返回 false，继续原来的顺序点亮逻辑。
+  if (ledBootEarlyFrame(timersGetMsTick())) return;
+
   // Sequential RGB On
   static uint8_t power_on_step = RGB_STEP_POWER_AROUND;
   switch (power_on_step)
@@ -801,6 +805,8 @@ void rgbPowerOn(uint8_t color) {
 
 #define BRIGHTNESS_MAX       255
 void rgbBatteryDis(uint8_t color, uint8_t power_level ) {
+  // 真正生效的开机分支走的是 BAT_DIS 灯效；同样用已保存的 boot 配置替换
+  if (ledBootEarlyFrame(timersGetMsTick())) return;
 
   switch (power_level)
   {
